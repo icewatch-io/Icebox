@@ -15,13 +15,16 @@ iptables -A INPUT -m addrtype --dst-type ANYCAST -j LOG --log-prefix "SNOWDOG: "
 
 echo "Installing iptables-persistent to save rules across reboots"
 apt-get update
-NEEDRESTART_MODE=a apt-get install iptables-persistent
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+DEBIAN_FRONTEND=noninteractive sudo apt-get install -y iptables-persistent
 
 echo "Configuring user"
 if [ ! "$(id -u "$USER" 2>/dev/null)" ]; then
     echo "Adding user $USER"
     useradd -r -s /usr/sbin/nologin "$USER"
 fi
+usermod -aG adm icebox
 
 echo "Setting up config"
 if [ ! -d /etc/icebox ]; then
