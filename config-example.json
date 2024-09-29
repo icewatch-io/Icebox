@@ -1,0 +1,42 @@
+{
+  "icebox": {
+    "name": "icebox1"
+  },
+  "log": {
+    "level": "INFO",
+    "file": "/var/log/icebox/icebox.log"
+  },
+  "iptables": {
+    "log_file": "/var/log/kern.log"
+  },
+  "smtp": {
+    "sending_enabled": true,
+    "to": "admin@mycompany.com",
+    "from": "admin@mycompany.com",
+    "smtp_server": "email-smtp.us-west-2.amazonaws.com",
+    "smtp_user": "AKIAXXXXXXXXXXX",
+    "smtp_password": "xxxxxxxxxxxxx",
+    "tls": true
+  },
+  "snowdog": {
+    "learning": true,
+    "db_file": "/opt/icebox/snowdog.sqlite",
+    "alerting": false
+  },
+  "icepick": [
+    {
+      "name": "HTTPS from PROD to MGMT",
+      "host": "10.20.30.1",
+      "port": "443",
+      "failure_action": "pass",
+      "success_action": "email"
+    },
+    {
+      "name": "HTTPS from PROD to ISOLATE1",
+      "host": "10.0.88.1",
+      "port": "443",
+      "failure_action": "pass",
+      "success_action": "email"
+    }
+  ]
+}
