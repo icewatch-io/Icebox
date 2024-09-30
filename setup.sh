@@ -45,18 +45,19 @@ mkdir -p /var/log/icebox
 echo "Installing Icebox"
 DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
-git clone git@github.com:icewatch-io/icebox.git
+git clone https://github.com/icewatch-io/icebox.git
 cd icebox
 mv src/* /opt/icebox/icebox
+
+if [ ! -f /etc/icebox/config.json ]; then
+    echo "Using example config"
+    cp "$DEPLOY_DIR/icebox/config-example.json" /etc/icebox/config.json
+fi
+
 chown -R $ICEBOX_USER:$ICEBOX_USER /opt/icebox
 chown -R $ICEBOX_USER:$ICEBOX_USER /var/log/icebox
 cd /opt/icebox
 rm -rf "$DEPLOY_DIR"
-
-if [ ! -f /etc/icebox/config.json ]; then
-    echo "Using example config"
-    cp config-example.json /etc/icebox/config.json
-fi
 
 echo "Setting up Icebox service"
 if [ ! -f /etc/systemd/system/icebox.service ]; then

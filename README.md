@@ -27,7 +27,7 @@ Snowdog has a "learning" mode where it records all observed MAC addresses. Once 
 ## Installation
 You can install Icebox on Ubuntu 22.04 systems with the following command:
 ```
-curl -s https://raw.githubusercontent.com/icewatch-io/icebox/master/setup.sh | sudo bash
+curl -s https://raw.githubusercontent.com/icewatch-io/icebox/main/setup.sh | sudo bash
 ```
 
 ## Configuration
