@@ -1,9 +1,20 @@
 #!/bin/bash
+set -e
 
-USER="icebox"
-DEVICE_IP=$(ip route get 1 | awk '{print $7; exit}')
+if [ -z "$ICEBOX_USER" ]; then
+    ICEBOX_USER="icebox"
+fi
 
-echo "Installing Icebox to run as $USER with IP address $DEVICE_IP"
+if [ -z "$DEVICE_IP" ]; then
+    DEVICE_IP=$(ip route get 1 | awk '{print $7; exit}')
+fi
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root"
+    exit
+fi
+
+echo "Installing Icebox to run as $ICEBOX_USER with IP address $DEVICE_IP"
 
 echo "Setting up iptables rules for logging"
 iptables -A INPUT -d $DEVICE_IP -p tcp -m conntrack --ctstate NEW -j LOG --log-prefix "ICICLE: "
@@ -20,40 +31,32 @@ echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo deb
 DEBIAN_FRONTEND=noninteractive sudo apt-get install -y iptables-persistent
 
 echo "Configuring user"
-if [ ! "$(id -u "$USER" 2>/dev/null)" ]; then
-    echo "Adding user $USER"
-    useradd -r -s /usr/sbin/nologin "$USER"
+if [ ! "$(id -u "$ICEBOX_USER" 2>/dev/null)" ]; then
+    echo "Adding user $ICEBOX_USER"
+    useradd -r -s /usr/sbin/nologin "$ICEBOX_USER"
 fi
 usermod -aG adm icebox
 
-echo "Setting up config"
-if [ ! -d /etc/icebox ]; then
-    mkdir /etc/icebox
-fi
-if [ ! -f /etc/icebox/config.json ]; then
-    cp config-example.json /etc/icebox/config.json
-fi
+echo "Setting up directories"
+mkdir -p /opt/icebox/icebox
+mkdir -p /etc/icebox
+mkdir -p /var/log/icebox
 
-echo "Setting up required directories"
-if [ ! -d /opt/icebox ]; then
-    mkdir /opt/icebox
-fi
-if [ ! -d /opt/icebox/icebox ]; then
-    mkdir /opt/icebox/icebox
-fi
-chown -R $USER:$USER /opt/icebox
-
-if [ ! -d /var/log/icebox ]; then
-    mkdir /var/log/icebox
-fi
-chown $USER:$USER /var/log/icebox
-
-echo "Downloadng Icebox"
+echo "Installing Icebox"
 DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
 git clone git@github.com:icewatch-io/icebox.git
 cd icebox
 mv src/* /opt/icebox/icebox
+chown -R $ICEBOX_USER:$ICEBOX_USER /opt/icebox
+chown -R $ICEBOX_USER:$ICEBOX_USER /var/log/icebox
+cd /opt/icebox
+rm -rf "$DEPLOY_DIR"
+
+if [ ! -f /etc/icebox/config.json ]; then
+    echo "Using example config"
+    cp config-example.json /etc/icebox/config.json
+fi
 
 echo "Setting up Icebox service"
 if [ ! -f /etc/systemd/system/icebox.service ]; then
@@ -65,8 +68,8 @@ Description=Icebox
 Type=simple
 ExecStart=python3 /opt/icebox/icebox
 WorkingDirectory=/opt/icebox/
-User=$USER
-Group=$USER
+User=$ICEBOX_USER
+Group=$ICEBOX_USER
 Restart=always
 RestartSec=1s
 
