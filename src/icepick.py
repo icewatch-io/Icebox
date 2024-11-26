@@ -2,6 +2,7 @@ import socket
 import time
 import random
 import signal
+import threading
 import sys
 
 from modules.smtp import SMTP
@@ -12,16 +13,23 @@ class Icepick:
 
     def __init__(self, config_path):
         self.config_path = config_path
+        self.shutdown_flag = threading.Event()
         self.config = get_config(config_path)
         self.logger = Logger.get_logger('icepick')
         self.smtp = SMTP(self.config['smtp'])
-        self.running = True
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
-    def stop(self, signum, frame):
+    def stop(self):
         self.logger.info('Stopping icepick')
-        self.running = False
+        self.shutdown_flag.set()
+
+    def run(self):
+        self.logger.info('Starting icepick')
+        while not self.shutdown_flag.is_set():
+            for connection in self.config['icepick']:
+                self.process_connection(connection)
+            time.sleep(random.randint(60, 90))
 
     def check_tcp(self, host, port):
         try:
@@ -59,13 +67,6 @@ class Icepick:
             message = f"Unknown action for {connection['name']}: {action}, connection {result}"
             self.logger.error(message)
             raise ValueError(message)
-
-    def run(self):
-        self.logger.info('Starting icepick')
-        while self.running:
-            for connection in self.config['icepick']:
-                self.process_connection(connection)
-            time.sleep(random.randint(60, 90))
 
 
 if __name__ == '__main__':

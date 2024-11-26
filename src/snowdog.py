@@ -1,5 +1,6 @@
 import re
 import time
+import threading
 
 from modules.smtp import SMTP
 from modules.logger import Logger
@@ -10,9 +11,9 @@ from modules.utils import validate_config, get_config
 class Snowdog:
 
     def __init__(self, config_path):
-        self.config_path = config_path
         try:
             self.config = get_config(config_path)
+            self.shutdown_flag = threading.Event()
             self.iptables_log = self.config['iptables']['log_file']
             self.logger = Logger.get_logger('snowdog')
             self.smtp = SMTP(self.config['smtp'])
@@ -29,7 +30,9 @@ class Snowdog:
             self.logger.error(f"Failed to initialize Snowdog: {e}")
             raise
 
-    def __del__(self):
+    def stop(self):
+        self.logger.info('Stopping snowdog')
+        self.shutdown_flag.set()
         try:
             if hasattr(self, 'log_watcher'):
                 self.log_watcher.stop()
@@ -49,7 +52,8 @@ class Snowdog:
                     self.logger.warning("Alerting is disabled")
             self.log_watcher.start()
 
-            while True:
+
+            while not self.shutdown_flag.is_set():
                 time.sleep(10)
         except Exception as e:
             self.logger.error(f"Error running Snowdog: {e}")

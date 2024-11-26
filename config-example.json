@@ -14,6 +14,7 @@
     "to": "admin@mycompany.com",
     "from": "admin@mycompany.com",
     "smtp_server": "email-smtp.us-west-2.amazonaws.com",
+    "smtp_port": 587,
     "smtp_user": "AKIAXXXXXXXXXXX",
     "smtp_password": "xxxxxxxxxxxxx",
     "tls": true

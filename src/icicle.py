@@ -12,6 +12,7 @@ class Icicle:
 
     def __init__(self, config_path):
         self.config_path = config_path
+        self.shutdown_flag = threading.Event()
         self.config = get_config(config_path)
         self.iptables_log = self.config['iptables']['log_file']
         self.logger = Logger.get_logger('icicle')
@@ -25,11 +26,15 @@ class Icicle:
             message_handler=self.handle_message
         )
 
+    def stop(self):
+        self.logger.info('Stopping icicle')
+        self.shutdown_flag.set()
+
     def run(self):
         self.logger.info('Starting icicle')
         self.log_watcher.start()
 
-        while True:
+        while not self.shutdown_flag.is_set():
             now = datetime.now()
             for src_address in list(self.connection_tracker.keys()):
                 connection_info = self.connection_tracker[src_address]

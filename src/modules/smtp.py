@@ -28,7 +28,7 @@ class SMTP:
             socket.setdefaulttimeout(timeout)
             server = smtplib.SMTP(
                 host=self.smtp_config['smtp_server'],
-                port=587,
+                port=self.smtp_config['smtp_port'],
                 timeout=timeout
             )
             if self.smtp_config['tls']:
