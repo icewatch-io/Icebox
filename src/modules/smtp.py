@@ -21,7 +21,7 @@ class SMTP:
         msg.attach(MIMEText(body, 'plain'))
 
         if not self.smtp_config['sending_enabled']:
-            self.logger.warn("Not sending email as sending is disabled")
+            self.logger.warning("Not sending email as sending is disabled")
             return
 
         try:

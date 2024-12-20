@@ -39,6 +39,7 @@ fi
 gecho "Setting up iptables rules for logging"
 iptables -A INPUT -d $DEVICE_IP -p tcp -m conntrack --ctstate NEW -j LOG --log-prefix "ICICLE: "
 iptables -A INPUT -d $DEVICE_IP -p udp -m conntrack --ctstate NEW -j LOG --log-prefix "ICICLE: "
+iptables -A INPUT -d $DEVICE_IP -p icmp -j LOG --log-prefix "ICICLE: "
 
 iptables -A INPUT -m addrtype --dst-type BROADCAST -j LOG --log-prefix "SNOWDOG: "
 iptables -A INPUT -m addrtype --dst-type MULTICAST -j LOG --log-prefix "SNOWDOG: "

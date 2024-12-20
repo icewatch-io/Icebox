@@ -47,10 +47,24 @@ class Icicle:
             self.new_message_event.clear()
 
     def handle_message(self, message):
-        self.logger.info(f'Detected incoming connection: {message}')
         try:
+            proto = re.search(r'PROTO=([0-9A-Za-z]*)', message)[1]
+            if proto == 'ICMP':
+                message += ' DPT=0'
+
+                type = int(re.search(r'PROTO=ICMP TYPE=([0-9]*)', message)[1])
+                filtered_types = [
+                    0,  # Echo Reply
+                    3,  # Destination Unreachable - due to Icepick checks
+                    4,  # Source Quench
+                    11, # Time Exceeded
+                ]
+                if type in filtered_types:
+                    return
+
+            self.logger.info(f'Detected incoming connection: {message}')
             src_address = re.search(r'SRC=([0-9A-Fa-f:\.]*)', message)[1]
-            dest_port = re.search(r'DPT=([0-9A-Fa-f:\.]*)', message)[1]
+            dest_port = re.search(r'DPT=([0-9]*)', message)[1]
             if src_address in self.connection_tracker:
                 self.connection_tracker[src_address]['connected_ports'].append(
                     dest_port
