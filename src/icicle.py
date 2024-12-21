@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import threading
-import time
 import re
 
 from modules.smtp import SMTP
@@ -64,7 +63,7 @@ class Icicle:
 
             self.logger.info(f'Detected incoming connection: {message}')
             src_address = re.search(r'SRC=([0-9A-Fa-f:\.]*)', message)[1]
-            dest_port = re.search(r'DPT=([0-9]*)', message)[1]
+            dest_port = int(re.search(r'DPT=([0-9]*)', message)[1])
             if src_address in self.connection_tracker:
                 self.connection_tracker[src_address]['connected_ports'].append(
                     dest_port
@@ -82,18 +81,24 @@ class Icicle:
 
     def send_alert(self, src_address: str, connection_info: dict) -> None:
         icebox_name = self.config['icebox']['name']
-        ports = connection_info['connected_ports']
-        start_time = str(connection_info['first_connection'])
 
-        subject = f'Icicle Alarm: {self.config["icebox"]["name"]}'
-        if len(ports) > 5:
+        start_time = str(connection_info['first_connection'])
+        ports = connection_info['connected_ports']
+        num_ports = len(ports)
+        unique_ports = set(ports)
+        num_unique_ports = len(unique_ports)
+
+        subject = f'Icicle Alarm: {icebox_name}'
+        if num_unique_ports > 3:
             subject = f'Icicle Alarm: PORT SCAN DETECTED: {icebox_name}'
+        elif num_unique_ports == 1 and 0 in unique_ports:
+            subject = f'Icicle Alarm: PING DETECTED: {icebox_name}'
 
         self.smtp.send_email(
             subject=subject,
             body=(
                 f'Incoming connection detected from {src_address}.\n\n'
-                f'{len(ports)} connections were observed to '
-                f'{len(set(ports))} unique ports, starting at {start_time}.'
+                f'{num_ports} connections were observed to '
+                f'{num_unique_ports} unique ports, starting at {start_time}.'
             )
         )
