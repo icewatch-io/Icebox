@@ -5,20 +5,25 @@ import os
 
 class LogWatcher:
 
-    def __init__(self, file_path, tag, message_handler):
+    def __init__(
+        self,
+        file_path: str,
+        tag: str,
+        message_handler: function
+    ) -> None:
         self.file_path = file_path
         self.tag = tag
         self.message_handler = message_handler
         self.message_queue = queue.Queue()
 
-    def start(self):
+    def start(self) -> None:
         log_watcher_thread = threading.Thread(target=self.watch_log_file)
         log_watcher_thread.start()
 
         message_worker_thread = threading.Thread(target=self.process_messages)
         message_worker_thread.start()
 
-    def watch_log_file(self):
+    def watch_log_file(self) -> None:
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"Log file not found: {self.file_path}")
         with open(self.file_path, 'r') as file:
@@ -33,7 +38,7 @@ class LogWatcher:
                 if self.tag in line:
                     self.message_queue.put(line.strip())
 
-    def process_messages(self):
+    def process_messages(self) -> None:
         while True:
             message = self.message_queue.get()
             if message:

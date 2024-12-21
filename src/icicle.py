@@ -10,7 +10,7 @@ from modules.log_watcher import LogWatcher
 
 class Icicle:
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         self.config_path = config_path
         self.shutdown_flag = threading.Event()
         self.config = get_config(config_path)
@@ -26,11 +26,11 @@ class Icicle:
             message_handler=self.handle_message
         )
 
-    def stop(self):
+    def stop(self) -> None:
         self.logger.info('Stopping icicle')
         self.shutdown_flag.set()
 
-    def run(self):
+    def run(self) -> None:
         self.logger.info('Starting icicle')
         self.log_watcher.start()
 
@@ -46,7 +46,7 @@ class Icicle:
             self.new_message_event.wait(timeout=1)
             self.new_message_event.clear()
 
-    def handle_message(self, message):
+    def handle_message(self, message: str) -> None:
         try:
             proto = re.search(r'PROTO=([0-9A-Za-z]*)', message)[1]
             if proto == 'ICMP':
@@ -80,7 +80,7 @@ class Icicle:
                 f'Error parsing message: {e}, {message}'
             )
 
-    def send_alert(self, src_address, connection_info):
+    def send_alert(self, src_address: str, connection_info: dict) -> None:
         icebox_name = self.config['icebox']['name']
         ports = connection_info['connected_ports']
         start_time = str(connection_info['first_connection'])

@@ -10,7 +10,7 @@ from modules.utils import validate_config, get_config
 
 class Snowdog:
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         try:
             self.config = get_config(config_path)
             self.shutdown_flag = threading.Event()
@@ -30,7 +30,7 @@ class Snowdog:
             self.logger.error(f"Failed to initialize Snowdog: {e}")
             raise
 
-    def stop(self):
+    def stop(self) -> None:
         self.logger.info('Stopping snowdog')
         self.shutdown_flag.set()
         try:
@@ -42,7 +42,7 @@ class Snowdog:
             self.logger.error(f"Error during cleanup: {e}")
             raise
 
-    def run(self):
+    def run(self) -> None:
         try:
             if self.config['snowdog']['learning']:
                 self.logger.info("Starting snowdog in learning mode")
@@ -59,7 +59,7 @@ class Snowdog:
             self.logger.error(f"Error running Snowdog: {e}")
             raise
 
-    def handle_message(self, message):
+    def handle_message(self, message: str) -> None:
         try:
             self.logger.debug(f"Detected broadcast traffic: {message}")
 
@@ -83,7 +83,7 @@ class Snowdog:
                 f"message: {message}"
             )
 
-    def learn_mac_addresses(self, message):
+    def learn_mac_addresses(self, message: str) -> None:
         try:
             source_mac, destination_mac = self.get_mac_addresses(message)
             if source_mac and destination_mac:
@@ -98,7 +98,7 @@ class Snowdog:
                 f"message: {message}"
             )
 
-    def has_unknown_macs(self, message):
+    def has_unknown_macs(self, message: str) -> None:
         try:
             source_mac, destination_mac = self.get_mac_addresses(message)
             if not source_mac or not destination_mac:
@@ -117,7 +117,7 @@ class Snowdog:
             )
             return False
 
-    def get_mac_addresses(self, message):
+    def get_mac_addresses(self, message: str) -> None:
             mac = re.search(r'MAC=([a-f0-9:]{77})', message)
             if mac:
                 try:

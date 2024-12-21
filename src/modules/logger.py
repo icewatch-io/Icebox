@@ -39,6 +39,7 @@ class Logger:
 
 
 class SanitizeLogFilter(logging.Filter):
+
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = re.sub(r'[\n\r\t]', '_', str(record.msg))
         return True

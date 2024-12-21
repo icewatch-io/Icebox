@@ -11,7 +11,7 @@ from modules.utils import get_config
 
 class Icepick:
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str) -> None:
         self.config_path = config_path
         self.shutdown_flag = threading.Event()
         self.config = get_config(config_path)
@@ -20,25 +20,25 @@ class Icepick:
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
-    def stop(self):
+    def stop(self) -> None:
         self.logger.info('Stopping icepick')
         self.shutdown_flag.set()
 
-    def run(self):
+    def run(self) -> None:
         self.logger.info('Starting icepick')
         while not self.shutdown_flag.is_set():
             for connection in self.config['icepick']:
                 self.process_connection(connection)
             time.sleep(random.randint(60, 90))
 
-    def check_tcp(self, host, port):
+    def check_tcp(self, host: str, port: int) -> bool:
         try:
             with socket.create_connection((host, port), timeout=5):
                 return True
         except Exception as e:
             return False
 
-    def process_connection(self, connection):
+    def process_connection(self, connection: dict) -> None:
         failure_action = connection['failure_action']
         success_action = connection['success_action']
 

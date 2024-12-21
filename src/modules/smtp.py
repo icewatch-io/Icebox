@@ -7,11 +7,11 @@ from modules.logger import Logger
 
 
 class SMTP:
-    def __init__(self, smtp_config):
+    def __init__(self, smtp_config: dict) -> None:
         self.smtp_config = smtp_config
         self.logger = Logger.get_logger('SMTP')
 
-    def send_email(self, subject, body, timeout=10):
+    def send_email(self, subject: str, body: str, timeout: int = 10) -> None:
         self.logger.info(f"Sending email: {subject}, {body}")
 
         msg = MIMEMultipart()

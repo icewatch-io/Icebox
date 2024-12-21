@@ -3,13 +3,14 @@ import sqlite3
 from modules.logger import Logger
 
 class SQLiteDB:
-    def __init__(self, db_path, table_name='mac_addresses'):
+
+    def __init__(self, db_path: str, table_name: str = 'mac_addresses') -> None:
         self.db_path = db_path
         self.table_name = table_name
         self.logger = Logger.get_logger('SMTP')
         self.init_db()
 
-    def init_db(self):
+    def init_db(self) -> None:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(f'''
@@ -20,7 +21,7 @@ class SQLiteDB:
             ''')
             conn.commit()
 
-    def insert_mac_address(self, mac_address):
+    def insert_mac_address(self, mac_address: str) -> bool:
         if self.is_known_mac(mac_address):
             return False
 
@@ -37,7 +38,7 @@ class SQLiteDB:
             self.logger.error(f"An error occurred: {e}")
             return False
 
-    def is_known_mac(self, mac_address):
+    def is_known_mac(self, mac_address: str) -> bool:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
