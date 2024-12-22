@@ -116,11 +116,11 @@ Log config options include the following:
 "log": {
   "level": "INFO",
   "file": "/var/log/icebox/icebox.log"
-},
+}
 ```
 
 #### level
-The message level to save to the log file. Valid level are "DEBUG", "INFO", "WARNING", and "ERROR".
+The message level to save to the log file. Valid levels are `DEBUG`, `INFO`, `WARNING`, and `ERROR`.
 
 #### file
 The file in which to save log messages.
@@ -130,7 +130,7 @@ Iptables config options include the following:
 ```
 "iptables": {
   "log_file": "/var/log/kern.log"
-},
+}
 ```
 
 #### log_file
@@ -147,17 +147,17 @@ SMTP config options include the following:
   "smtp_user": "AKIAXXXXXXXXXXX",
   "smtp_password": "xxxxxxxxxxxxx",
   "tls": true
-},
+}
 ```
 
 #### sending_enabled
 Whether to actually send the alert emails. Alerts will only be logged locally if set to false.
 
 #### to
-The email address to send the alert to, e.g. "foo@example.com".
+The email address to send the alert to, e.g. `foo@example.com`.
 
 #### from
-The email address to use as the "from" address in alerts, e.g. "foo@example.com".
+The email address to use as the "from" address in alerts, e.g. `foo@example.com`.
 
 #### smtp_server
 The SMTP server to use.
@@ -169,7 +169,7 @@ The SMTP user to use.
 The SMTP password to use.
 
 #### tls
-Whether to use STARTTLS when connecting to the SMPT server.
+Whether to use STARTTLS when connecting to the SMTP server.
 
 ### Snowdog
 Snowdog config options include the following:
@@ -178,7 +178,7 @@ Snowdog config options include the following:
   "learning": true,
   "db_file": "/opt/icebox/snowdog.sqlite",
   "alerting": false
-},
+}
 ```
 
 #### learning
@@ -194,14 +194,14 @@ Whether to send alerts. If set to false, Snowdog will behave as described above,
 Icepick config options include the following:
 ```
 "icepick": [
-    {
-      "name": "CHECK_NAME",
-      "host": "1.2.3.4",
-      "port": "443",
-      "failure_action": "pass",
-      "success_action": "email"
-    }
-  ]
+  {
+    "name": "CHECK_NAME",
+    "host": "1.2.3.4",
+    "port": "443",
+    "failure_action": "pass",
+    "success_action": "email"
+  }
+]
 ```
 
 The config consists of an array of checks TCP connections checks to perform. Icepick checks have the following config options, all of which are required:
@@ -216,7 +216,7 @@ The hostname or IP address to check the connection to.
 The TCP port on the host to check the connection to.
 
 #### failure_action
-The action to take if the TCP connection fails. Valid actions are "pass" and "email". "pass" means that no action should be taken. "email" means that an email alert should be sent.
+The action to take if the TCP connection fails. Valid actions are `pass` and `email`. `pass` means that no action should be taken. `email` means that an email alert should be sent.
 
 #### success_action
 Same as failure_action, but determines the action to take if the connection succeeds.
