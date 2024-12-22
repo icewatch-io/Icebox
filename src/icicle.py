@@ -28,6 +28,8 @@ class Icicle:
     def stop(self) -> None:
         self.logger.info('Stopping icicle')
         self.shutdown_flag.set()
+        if hasattr(self, 'log_watcher'):
+            self.log_watcher.stop()
 
     def run(self) -> None:
         self.logger.info('Starting icicle')

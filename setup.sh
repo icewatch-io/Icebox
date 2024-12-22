@@ -98,6 +98,7 @@ Description=Icebox
 [Service]
 Type=simple
 ExecStart=python3 /opt/icebox/icebox
+TimeoutStopSec=15
 WorkingDirectory=/opt/icebox/
 User=$ICEBOX_USER
 Group=$ICEBOX_USER

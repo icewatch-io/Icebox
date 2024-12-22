@@ -10,25 +10,25 @@ CONFIG_PATH = '/etc/icebox/config.json'
 MODULES = ['icepick', 'icicle', 'snowdog']
 
 shutdown_flag = threading.Event()
-
+instances = []
 
 def signal_handler(signum: int, frame: any) -> None:
     global shutdown_flag
     shutdown_flag.set()
 
-
-def start_ice_cube_thread(ice_cube_name: str, config_path: str) -> None:
+def start_ice_cube_thread(ice_cube_name: str, config_path: str) -> tuple:
     ice_cube = importlib.import_module(ice_cube_name)
     ice_cube_class = getattr(ice_cube, ice_cube_name.capitalize())
     instance = ice_cube_class(config_path)
-    thread = threading.Thread(target=instance.run)
+    thread = threading.Thread(target=instance.run, daemon=True)
     thread.start()
-    return thread
-
+    return thread, instance
 
 def main() -> None:
-    global shutdown_flag
+    global shutdown_flag, instances
+
     signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     config = get_config(CONFIG_PATH)
     Logger.configure(
@@ -42,27 +42,38 @@ def main() -> None:
     threads = []
     for ice_cube_name in MODULES:
         try:
-            thread = start_ice_cube_thread(ice_cube_name, CONFIG_PATH)
+            thread, instance = start_ice_cube_thread(ice_cube_name, CONFIG_PATH)
             threads.append(thread)
+            instances.append(instance)
         except Exception as e:
             logger.error(f"Failed to start thread for ice cube {ice_cube_name}: {e}")
             sys.exit(1)
 
     try:
-        while not shutdown_flag.is_set():
-            for thread in threads:
-                thread.join(1)
-        for thread in threads:
-            thread.stop()
+        while True:
+            if shutdown_flag.is_set():
+                break
+            shutdown_flag.wait(1.0)
     except KeyboardInterrupt:
-        logger.info("Shutting down...")
+        shutdown_flag.set()
+
+    logger.info("Shutting down...")
+
+    # Stop all instances
+    for instance in instances:
+        try:
+            instance.stop()
+        except Exception as e:
+            logger.error(f"Error stopping instance: {e}")
 
     logger.info("Waiting for threads to finish...")
     for thread in threads:
-        thread.join()
+        try:
+            thread.join(timeout=5.0)
+        except Exception as e:
+            logger.error(f"Error joining thread: {e}")
 
     logger.info("Icebox stopped")
-
 
 if __name__ == "__main__":
     main()
