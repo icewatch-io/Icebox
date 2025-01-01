@@ -50,6 +50,31 @@ You can restart Icebox using its systemd service:
 systemctl start icebox
 ```
 
+## Testing
+To run the tests, first install the development dependencies:
+
+```bash
+pip3 install -e .
+```
+Ensure pytest is installed:
+
+```bash
+pip3 install pytest
+```
+
+Run the tests using pytest:
+
+```bash
+python3 -m pytest
+```
+
+The tests require:
+- A test host (default: 192.168.20.11) with SSH access
+- A test user with SSH key authentication configured
+- Appropriate permissions to execute commands on the test host
+
+Configure test parameters in `tests/conftest.py` if needed.
+
 ## Configuration
 Icebox looks for a configuration file in `/etc/icebox/icebox.json`.
 

@@ -73,7 +73,7 @@ DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
 git clone https://github.com/icewatch-io/icebox.git
 cd icebox
-mv src/* /opt/icebox/icebox
+mv src/icebox /opt/icebox
 
 if [ ! -f /etc/icebox/config.json ]; then
     gecho "Using example config"
@@ -97,7 +97,7 @@ Description=Icebox
 
 [Service]
 Type=simple
-ExecStart=python3 /opt/icebox/icebox
+ExecStart=python3 -B /opt/icebox/icebox
 TimeoutStopSec=15
 WorkingDirectory=/opt/icebox/
 User=$ICEBOX_USER
