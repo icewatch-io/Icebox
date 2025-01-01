@@ -114,3 +114,4 @@ systemctl daemon-reload
 systemctl enable icebox --now
 
 gecho "Icebox installed and started. Reboot recommended."
+gecho "Updated setup."
