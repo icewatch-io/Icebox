@@ -25,7 +25,6 @@ def ssh_client():
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    # Connect to test host
     client.connect(
         TEST_CONFIG["TEST_HOST"],
         username=TEST_CONFIG["TEST_USER"],
@@ -33,8 +32,6 @@ def ssh_client():
     )
 
     yield client
-
-    # Cleanup
     client.close()
 
 
