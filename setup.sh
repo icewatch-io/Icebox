@@ -72,7 +72,7 @@ gecho "Installing Icebox"
 DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
 git clone https://github.com/icewatch-io/icebox.git
-cd icebox
+cd Icebox
 mv src/icebox /opt/icebox
 
 if [ ! -f /etc/icebox/config.json ]; then
