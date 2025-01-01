@@ -77,7 +77,7 @@ mv src/icebox /opt/icebox
 
 if [ ! -f /etc/icebox/config.json ]; then
     gecho "Using example config"
-    cp "$DEPLOY_DIR/icebox/config-example.json" /etc/icebox/config.json
+    cp "$DEPLOY_DIR/Icebox/config-example.json" /etc/icebox/config.json
 else
     gecho "Using existing config"
 fi
