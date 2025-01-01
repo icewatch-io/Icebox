@@ -1,0 +1,50 @@
+name: Installation Dry Run
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Run setup script from PR
+      run: |
+        set -e
+        echo "Starting dry run installation process..."
+        
+        # Get the PR branch name
+        BRANCH_NAME=${GITHUB_HEAD_REF}
+        echo "PR branch: ${BRANCH_NAME}"
+        
+        # Get the PR repo
+        REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+        echo "PR repository: ${REPO_URL}"
+        
+        # Download the setup script from the PR's branch
+        echo "Downloading setup script..."
+        curl -s "${REPO_URL}/raw/${BRANCH_NAME}/setup.sh" -o setup.sh
+        if [ ! -f setup.sh ]; then
+          echo "Error: Failed to download setup.sh"
+          exit 1
+        fi
+        
+        # Modify the setup script to use the PR's branch/repo
+        echo "Modifying setup script..."
+        sed -i "s|git clone https://github.com/icewatch-io/icebox.git|git clone ${REPO_URL}|g" setup.sh
+        
+        # Run the setup script
+        echo "Running setup script..."
+        sudo bash setup.sh
+        
+        # Verify the service was installed
+        echo "Verifying service installation..."
+        if systemctl is-active icebox; then
+          echo "Installation successful: icebox service is active"
+        else
+          echo "Error: icebox service is not active"
+          exit 1
+        fi
