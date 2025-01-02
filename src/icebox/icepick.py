@@ -9,6 +9,7 @@ from modules.smtp import SMTP
 from modules.logger import Logger
 from modules.utils import get_config
 
+
 class Icepick:
 
     def __init__(self, config_path: str) -> None:

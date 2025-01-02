@@ -4,6 +4,7 @@ import time
 import os
 from typing import Callable
 
+
 class LogWatcher:
     def __init__(
         self,

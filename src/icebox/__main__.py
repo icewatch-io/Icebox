@@ -12,9 +12,11 @@ MODULES = ['icepick', 'icicle', 'snowdog']
 shutdown_flag = threading.Event()
 instances = []
 
+
 def signal_handler(signum: int, frame: any) -> None:
     global shutdown_flag
     shutdown_flag.set()
+
 
 def start_ice_cube_thread(ice_cube_name: str, config_path: str) -> tuple:
     ice_cube = importlib.import_module(ice_cube_name)
@@ -23,6 +25,7 @@ def start_ice_cube_thread(ice_cube_name: str, config_path: str) -> tuple:
     thread = threading.Thread(target=instance.run, daemon=True)
     thread.start()
     return thread, instance
+
 
 def main() -> None:
     global shutdown_flag, instances
@@ -74,6 +77,7 @@ def main() -> None:
             logger.error(f"Error joining thread: {e}")
 
     logger.info("Icebox stopped")
+
 
 if __name__ == "__main__":
     main()

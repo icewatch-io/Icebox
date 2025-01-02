@@ -8,6 +8,7 @@ from modules.sqlite import SQLiteDB
 from modules.log_watcher import LogWatcher
 from modules.utils import validate_config, get_config
 
+
 class Snowdog:
 
     def __init__(self, config_path: str) -> None:

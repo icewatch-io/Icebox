@@ -7,6 +7,7 @@ from modules.logger import Logger
 from modules.utils import get_config
 from modules.log_watcher import LogWatcher
 
+
 class Icicle:
 
     def __init__(self, config_path: str) -> None:

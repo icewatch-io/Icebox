@@ -2,6 +2,7 @@ import sqlite3
 
 from modules.logger import Logger
 
+
 class SQLiteDB:
 
     def __init__(self, db_path: str, table_name: str = 'mac_addresses') -> None:

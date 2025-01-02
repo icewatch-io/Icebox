@@ -3,6 +3,7 @@ import re
 from threading import Lock
 from typing import Optional
 
+
 class Logger:
     _logger: Optional[logging.Logger] = None
     _lock: Lock = Lock()
