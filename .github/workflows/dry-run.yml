@@ -52,13 +52,12 @@ jobs:
         fi
 
         echo "Verifying iptables rules..."
-        IPTABLES=$(sudo iptables -L | grep "SNOWDOG\|ICEPICK")
-        if [ -z "$IPTABLES" ]; then
-          echo "Error: iptables rules not found after initial service start"
-          exit 1
-        else
+        if sudo iptables -L | grep "SNOWDOG\|ICICLE"; then
           echo "Success: iptables rules found"
           echo "$IPTABLES"
+        else
+          echo "Error: iptables rules not found after initial service start"
+          exit 1
         fi
 
         echo "Verifying service stop..."
@@ -71,12 +70,11 @@ jobs:
         fi
 
         echo "Verifying iptables rules are cleared after service stop..."
-        IPTABLES=$(sudo iptables -L | grep "SNOWDOG\|ICEPICK")
-        if [ -z "$IPTABLES" ]; then
-          echo "Success: iptables rules cleared"
+        if sudo iptables -L | grep -q "SNOWDOG\|ICICLE"; then
+            echo "Error: iptables rules not cleared after service stop"
+            exit 1
         else
-          echo "Error: iptables rules not cleared after service stop"
-          exit 1
+            echo "Success: iptables rules cleared"
         fi
 
         echo "Success: dry run completed"
