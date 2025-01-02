@@ -25,31 +25,8 @@ fi
 if [ -z "$DEVICE_IP" ]; then
     DEVICE_IP=$(ip route get 1 | awk '{print $7; exit}')
 fi
+
 gecho "Installing Icebox to run as $ICEBOX_USER with IP address $DEVICE_IP"
-
-# Cleanup old rules
-if [ -f /etc/iptables/rules.v4 ]; then
-    gecho "Removing existing iptables rules"
-    temp=$(mktemp)
-    cat /etc/iptables/rules.v4 | grep -v "SNOWDOG\|ICICLE" > $temp
-    cat $temp > /etc/iptables/rules.v4
-    rm $temp
-fi
-
-gecho "Setting up iptables rules for logging"
-iptables -A INPUT -d $DEVICE_IP -p tcp -m conntrack --ctstate NEW -j LOG --log-prefix "ICICLE: "
-iptables -A INPUT -d $DEVICE_IP -p udp -m conntrack --ctstate NEW -j LOG --log-prefix "ICICLE: "
-iptables -A INPUT -d $DEVICE_IP -p icmp -j LOG --log-prefix "ICICLE: "
-
-iptables -A INPUT -m addrtype --dst-type BROADCAST -j LOG --log-prefix "SNOWDOG: "
-iptables -A INPUT -m addrtype --dst-type MULTICAST -j LOG --log-prefix "SNOWDOG: "
-iptables -A INPUT -m addrtype --dst-type ANYCAST -j LOG --log-prefix "SNOWDOG: "
-
-gecho "Installing iptables-persistent to save rules across reboots"
-apt-get update
-echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
-echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
-DEBIAN_FRONTEND=noninteractive sudo apt-get install -y iptables-persistent
 
 gecho "Configuring user"
 if [ ! "$(id -u "$ICEBOX_USER" 2>/dev/null)" ]; then
@@ -84,6 +61,7 @@ fi
 
 chown -R $ICEBOX_USER:$ICEBOX_USER /opt/icebox
 chown -R $ICEBOX_USER:$ICEBOX_USER /var/log/icebox
+chmod -R g+x /opt/icebox/icebox
 cd /opt/icebox
 rm -rf "$DEPLOY_DIR"
 
@@ -97,13 +75,16 @@ Description=Icebox
 
 [Service]
 Type=simple
+ExecStartPre=+/opt/icebox/icebox/iptables.sh add
+ExecStopPost=+/opt/icebox/icebox/iptables.sh remove
+
 ExecStart=python3 -B /opt/icebox/icebox
-TimeoutStopSec=15
 WorkingDirectory=/opt/icebox/
 User=$ICEBOX_USER
 Group=$ICEBOX_USER
 Restart=always
 RestartSec=1s
+TimeoutStopSec=15
 
 [Install]
 WantedBy=multi-user.target
