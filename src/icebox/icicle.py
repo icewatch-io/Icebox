@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import threading
 import re
 
@@ -37,7 +37,7 @@ class Icicle:
         self.log_watcher.start()
 
         while not self.shutdown_flag.is_set():
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             for src_address in list(self.connection_tracker.keys()):
                 connection_info = self.connection_tracker[src_address]
                 time_since = now - connection_info['first_connection']
@@ -74,7 +74,7 @@ class Icicle:
             else:
                 self.connection_tracker[src_address] = {
                     'connected_ports': [dest_port],
-                    'first_connection': datetime.now()
+                    'first_connection': datetime.now(timezone.utc)
                 }
             self.new_message_event.set()
         except Exception as e:

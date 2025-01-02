@@ -1,13 +1,13 @@
 import pytest
 import paramiko
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
 def test_ping_detection(test_config, ssh_client, log_watcher):
     """Test ping detection functionality."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
 
     # Execute ping command
     stdin, stdout, stderr = ssh_client.exec_command(
@@ -25,7 +25,7 @@ def test_ping_detection(test_config, ssh_client, log_watcher):
 
 def test_port_scan_detection(test_config, ssh_client, log_watcher):
     """Test port scan detection functionality."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
 
     # Execute Nmap scan
     stdin, stdout, stderr = ssh_client.exec_command(
@@ -43,7 +43,7 @@ def test_port_scan_detection(test_config, ssh_client, log_watcher):
 
 def test_tcp_connection_detection(test_config, ssh_client, log_watcher):
     """Test TCP connection detection functionality."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
 
     # Execute Netcat command
     stdin, stdout, stderr = ssh_client.exec_command(
