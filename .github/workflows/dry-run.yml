@@ -1,11 +1,11 @@
-name: Installation Dry Run
+name: Dry run
 
 on:
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  dry-run:
+  install-and-run:
     runs-on: ubuntu-22.04
 
     steps:
