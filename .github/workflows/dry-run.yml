@@ -1,11 +1,11 @@
-name: Installation Dry Run
+name: Dry run
 
 on:
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  dry-run:
+  install-and-run:
     runs-on: ubuntu-22.04
 
     steps:
@@ -13,70 +13,5 @@ jobs:
 
     - name: Run setup script from PR
       run: |
-        set -e
-        echo "Starting dry run..."
-
-        BRANCH_NAME=${GITHUB_HEAD_REF}
-        echo "PR branch: ${BRANCH_NAME}"
-
-        REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
-        REPO_RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}"
-        echo "PR repository: ${REPO_URL}"
-
-        # Download the setup script from the PR's branch
-        echo "Downloading setup script..."
-        if ! curl -sf "${REPO_RAW_URL}/${BRANCH_NAME}/setup.sh" -o setup.sh; then
-            echo "Error: failed to download setup.sh"
-            exit 1
-        fi
-        ls -l setup.sh
-
-        # Modify the setup script to use the PR's branch
-        echo "Modifying setup script..."
-        sed -i "s|git clone https://github.com/icewatch-io/icebox.git|git clone -b ${BRANCH_NAME} ${REPO_URL}|g" setup.sh
-        if ! grep -q "${BRANCH_NAME}" setup.sh; then
-            echo "Error: failed to update branch in downloaded setup.sh"
-            exit 1
-        fi
-
-        echo "Running setup script..."
-        chmod +x setup.sh
-        sudo bash -x setup.sh 2>&1
-
-        echo "Verifying service start..."
-        if systemctl is-active icebox &>/dev/null; then
-          echo "Success: icebox service is active"
-        else
-          echo "Error: icebox service is not active"
-          exit 1
-        fi
-
-        echo "Verifying iptables rules..."
-        IPTABLES=$(sudo iptables -L | grep "SNOWDOG\|ICEPICK")
-        if [ -z "$IPTABLES" ]; then
-          echo "Error: iptables rules not found after initial service start"
-          exit 1
-        else
-          echo "Success: iptables rules found"
-          echo "$IPTABLES"
-        fi
-
-        echo "Verifying service stop..."
-        sudo systemctl stop icebox
-        if systemctl is-active icebox &>/dev/null; then
-          echo "Error: icebox service failed to stop"
-          exit 1
-        else
-          echo "Success: icebox service stopped"
-        fi
-
-        echo "Verifying iptables rules are cleared after service stop..."
-        IPTABLES=$(sudo iptables -L | grep "SNOWDOG\|ICEPICK")
-        if [ -z "$IPTABLES" ]; then
-          echo "Success: iptables rules cleared"
-        else
-          echo "Error: iptables rules not cleared after service stop"
-          exit 1
-        fi
-
-        echo "Success: dry run completed"
+        chmod +x .github/workflows/scripts/dry-run.sh
+        .github/workflows/scripts/dry-run.sh
