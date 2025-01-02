@@ -5,16 +5,18 @@ build-backend = "hatchling.build"
 [project]
 name = "icebox"
 version = "0.1.0"
-authors = [
-  { name = "Your Name", email = "your.email@example.com" },
-]
-description = "Icebox security monitoring and alerting system"
+description = "Intrusion Countermeasures Electronics Box"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
     "paramiko>=2.7.0",
     "pytest>=6.0.0",
 ]
+
+[project.urls]
+repository = "https://github.com/icewatch-io/Icebox"
+documentation = "https://github.com/icewatch-io/Icebox"
+issues = "https://github.com/icewatch-io/Icebox/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["icebox"]
