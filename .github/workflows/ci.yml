@@ -1,0 +1,25 @@
+name: Dry run
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run setup script and sanity testing using incoming PR
+      run: bash .github/workflows/scripts/dry-run.sh
+
+  end-to-end-testing:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    environment: dev
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run end-to-end testing using incoming PR
+      run: bash .github/workflows/scripts/end-to-end.sh
