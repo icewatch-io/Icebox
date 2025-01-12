@@ -1,4 +1,4 @@
 echo "Hello world"
-echo $SECRET1
+echo ">>$SECRET_ONE<<"
 echo `env`
 env
