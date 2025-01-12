@@ -17,6 +17,8 @@ jobs:
   end-to-end-testing:
     runs-on: ubuntu-22.04
     environment: dev
+    env:
+      SECRET_ONE: ${{ secrets.SECRET1 }}
     steps:
     - uses: actions/checkout@v3
 
