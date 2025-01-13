@@ -39,7 +39,7 @@ echo "$OCI_API_KEY_PUB" > ~/.oci/oci_api_key_public.pem
 chmod 600 ~/.oci/oci_api_key.pem ~/.oci/oci_api_key_public.pem
 
 # Start instance in OCI
-SERVER_IP=$(bash .github/workers/scripts/start-instance.sh $SSH_KEY)
+SERVER_IP=$(bash .github/workflows/scripts/start-instance.sh $SSH_KEY)
 if [ -z "$SERVER_IP" ]; then
     echo "Failed to get server IP"
     exit 1
