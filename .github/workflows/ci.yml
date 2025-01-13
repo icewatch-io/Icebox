@@ -18,7 +18,14 @@ jobs:
     runs-on: ubuntu-22.04
     environment: dev
     env:
-      SECRET_ONE: ${{ secrets.SECRET1 }}
+      OCI_API_KEY_PRIV: ${{ secrets.OCI_API_KEY_PRIV }}
+      OCI_API_KEY_PUB: ${{ secrets.OCI_API_KEY_PUB }}
+      OCI_CID: ${{ secrets.OCI_CID }}
+      OCI_COMP_ID: ${{ secrets.OCI_COMP_ID }}
+      OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
+      OCI_AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
+      OCI_SHAPE: ${{ secrets.OCI_SHAPE }}
+      OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
     steps:
     - uses: actions/checkout@v3
 
