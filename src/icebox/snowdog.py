@@ -11,9 +11,10 @@ from modules.utils import validate_config, get_config
 
 class Snowdog:
 
-    def __init__(self, config_path: str) -> None:
+    def __init__(self) -> None:
         try:
-            self.config = get_config(config_path)
+            self.config = get_config()
+            self.config.add_observer(self._handle_config_update)
             self.shutdown_flag = threading.Event()
             self.iptables_log = self.config['iptables']['log_file']
             self.logger = Logger.get_logger('snowdog')
@@ -30,6 +31,13 @@ class Snowdog:
         except Exception as e:
             self.logger.error(f"Failed to initialize Snowdog: {e}")
             raise
+
+    def _handle_config_update(self, new_config: dict) -> None:
+        """Handle updates to the configuration."""
+        self.config = new_config
+        self.iptables_log = new_config['iptables']['log_file']
+        # Reinitialize SMTP with new config
+        self.smtp = SMTP(new_config['smtp'])
 
     def stop(self) -> None:
         self.logger.info('Stopping snowdog')

@@ -3,11 +3,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from modules.utils import get_config
 from modules.logger import Logger
 
 
 class SMTP:
-    def __init__(self, smtp_config: dict) -> None:
+    def __init__(self) -> None:
+        """Initialize SMTP with config from ConfigStore singleton."""
+        smtp_config = get_config().get('smtp', {})
         self.smtp_config = smtp_config
         self.logger = Logger.get_logger('SMTP')
 

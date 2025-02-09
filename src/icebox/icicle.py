@@ -10,10 +10,9 @@ from modules.log_watcher import LogWatcher
 
 class Icicle:
 
-    def __init__(self, config_path: str) -> None:
-        self.config_path = config_path
+    def __init__(self) -> None:
+        self.config = get_config()
         self.shutdown_flag = threading.Event()
-        self.config = get_config(config_path)
         self.iptables_log = self.config['iptables']['log_file']
         self.logger = Logger.get_logger('icicle')
         self.smtp = SMTP(self.config['smtp'])

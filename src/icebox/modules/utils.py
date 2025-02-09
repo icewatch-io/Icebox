@@ -17,7 +17,8 @@ def validate_config(config: dict, required_keys: list) -> None:
         raise ValueError(f"Missing required config keys: {missing_keys}")
 
 
-def get_config(config_path: str) -> dict:
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-    return config
+def get_config() -> dict:
+    """Get the current config from the ConfigStore singleton."""
+    from .config_store import ConfigStore
+    config_store = ConfigStore()
+    return config_store.get_config()

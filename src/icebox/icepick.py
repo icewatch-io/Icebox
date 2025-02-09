@@ -7,19 +7,27 @@ import sys
 
 from modules.smtp import SMTP
 from modules.logger import Logger
+from modules.config_store import ConfigStore
 from modules.utils import get_config
 
 
 class Icepick:
 
-    def __init__(self, config_path: str) -> None:
-        self.config_path = config_path
+    def __init__(self) -> None:
+        self.config_store = ConfigStore()
+        self.config_store.add_observer(self._handle_config_update)
+        self.config = self.config_store.get_config()
+
         self.shutdown_flag = threading.Event()
-        self.config = get_config(config_path)
         self.logger = Logger.get_logger('icepick')
         self.smtp = SMTP(self.config['smtp'])
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
+
+    def _handle_config_update(self, new_config: dict) -> None:
+        """Handle updates to the configuration."""
+        self.config = new_config
+        self.smtp = SMTP(new_config['smtp'])
 
     def stop(self) -> None:
         self.logger.info('Stopping icepick')

@@ -1,14 +1,17 @@
 import sqlite3
 
+from modules.utils import get_config
 from modules.logger import Logger
 
 
 class SQLiteDB:
 
-    def __init__(self, db_path: str, table_name: str = 'mac_addresses') -> None:
-        self.db_path = db_path
+    def __init__(self, table_name: str = 'mac_addresses') -> None:
+        """Initialize SQLiteDB with config from ConfigStore singleton."""
+        config = get_config()
+        self.db_path = config.get('database_path')
         self.table_name = table_name
-        self.logger = Logger.get_logger('SMTP')
+        self.logger = Logger.get_logger('SQLite')
         self.init_db()
 
     def init_db(self) -> None:
