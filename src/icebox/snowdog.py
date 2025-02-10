@@ -2,27 +2,33 @@ import re
 import time
 import threading
 
-from modules.smtp import SMTP
+from modules.alerter import Alerter
 from modules.logger import Logger
 from modules.sqlite import SQLiteDB
 from modules.log_watcher import LogWatcher
-from modules.utils import validate_config, get_config
+from modules.utils import validate_config
+from modules.config_store import ConfigStore
 
 
 class Snowdog:
 
     def __init__(self) -> None:
         try:
-            self.config = get_config()
-            self.config.add_observer(self._handle_config_update)
+            self.config_store = ConfigStore()
+
             self.shutdown_flag = threading.Event()
-            self.iptables_log = self.config['iptables']['log_file']
             self.logger = Logger.get_logger('snowdog')
-            self.smtp = SMTP(self.config['smtp'])
-            self.db = SQLiteDB(self.config['snowdog']['db_file'])
 
-            validate_config(self.config, ['iptables', 'smtp', 'snowdog'])
+            self.config_store.watch('iptables.log_file', self._handle_log_file_change)
+            self.config_store.watch('smtp', self._handle_smtp_config_change)
+            self.config_store.watch('snowdog', self._handle_snowdog_config_change)
 
+            self.iptables_log = self.config_store.get('iptables.log_file')
+            self.alerter = Alerter()
+            if self.config_store.get('smtp'):
+                self.alerter.configure_smtp(self.config_store.get('smtp'))
+
+            self.db = SQLiteDB(self.config_store.get('snowdog.db_file'))
             self.log_watcher = LogWatcher(
                 file_path=self.iptables_log,
                 tag='SNOWDOG',
@@ -32,12 +38,21 @@ class Snowdog:
             self.logger.error(f"Failed to initialize Snowdog: {e}")
             raise
 
-    def _handle_config_update(self, new_config: dict) -> None:
-        """Handle updates to the configuration."""
-        self.config = new_config
-        self.iptables_log = new_config['iptables']['log_file']
-        # Reinitialize SMTP with new config
-        self.smtp = SMTP(new_config['smtp'])
+    def _handle_log_file_change(self, new_path: str) -> None:
+        """Handle changes to log file path."""
+        self.iptables_log = new_path
+        if hasattr(self, 'log_watcher'):
+            self.log_watcher.file_path = new_path
+
+    def _handle_smtp_config_change(self, new_config: dict) -> None:
+        """Handle changes to SMTP configuration."""
+        if hasattr(self, 'alerter'):
+            self.alerter.configure_smtp(new_config)
+
+    def _handle_snowdog_config_change(self, new_config: dict) -> None:
+        """Handle changes to Snowdog configuration."""
+        if hasattr(self, 'db'):
+            self.db = SQLiteDB(new_config['db_file'])
 
     def stop(self) -> None:
         self.logger.info('Stopping snowdog')
@@ -53,11 +68,11 @@ class Snowdog:
 
     def run(self) -> None:
         try:
-            if self.config['snowdog']['learning']:
+            if self.config_store.get('snowdog.learning'):
                 self.logger.info("Starting snowdog in learning mode")
             else:
                 self.logger.info("Starting snowdog")
-                if not self.config['snowdog']['alerting']:
+                if not self.config_store.get('snowdog.alerting'):
                     self.logger.warning("Alerting is disabled")
             self.log_watcher.start()
 
@@ -72,12 +87,12 @@ class Snowdog:
         try:
             self.logger.debug(f"Detected broadcast traffic: {message}")
 
-            if self.config['snowdog']['learning']:
+            if self.config_store.get('snowdog.learning'):
                 self.learn_mac_addresses(message)
             elif self.has_unknown_macs(message):
-                if self.config['snowdog']['alerting']:
-                    self.smtp.send_email(
-                        f'Snowdog Alarm: {self.config["icebox"]["name"]}',
+                if self.config_store.get('snowdog.alerting'):
+                    self.alerter.alert(
+                        f'Snowdog Alert: {self.config_store.get("icebox.name")}',
                         f'Unknown MAC address detected.\n{message}'
                     )
                 else:

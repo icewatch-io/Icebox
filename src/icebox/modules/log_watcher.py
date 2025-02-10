@@ -4,17 +4,15 @@ import time
 import os
 from typing import Callable
 
-from module.utils import get_config
-
 
 class LogWatcher:
     def __init__(
         self,
+        file_path: str,
         tag: str,
         message_handler: Callable[[str], None]
     ) -> None:
-        config = get_config()
-        self.file_path = config.get('log_path')
+        self.file_path = file_path
         self.tag = tag
         self.message_handler = message_handler
         self.message_queue = queue.Queue()

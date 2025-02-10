@@ -2,20 +2,27 @@ from datetime import datetime, timedelta, timezone
 import threading
 import re
 
-from modules.smtp import SMTP
+from modules.alerter import Alerter
 from modules.logger import Logger
-from modules.utils import get_config
 from modules.log_watcher import LogWatcher
+from modules.config_store import ConfigStore
 
 
 class Icicle:
 
     def __init__(self) -> None:
-        self.config = get_config()
+        self.config_store = ConfigStore()
         self.shutdown_flag = threading.Event()
-        self.iptables_log = self.config['iptables']['log_file']
         self.logger = Logger.get_logger('icicle')
-        self.smtp = SMTP(self.config['smtp'])
+
+        self.config_store.watch('iptables.log_file', self._handle_log_file_change)
+        self.config_store.watch('smtp', self._handle_smtp_config_change)
+
+        self.iptables_log = self.config_store.get('iptables.log_file')
+        self.alerter = Alerter()
+        if self.config_store.get('smtp'):
+            self.alerter.configure_smtp(self.config_store.get('smtp'))
+
         self.connection_tracker = {}
         self.new_message_event = threading.Event()
 
@@ -24,6 +31,17 @@ class Icicle:
             tag='ICICLE',
             message_handler=self.handle_message
         )
+
+    def _handle_log_file_change(self, new_path: str) -> None:
+        """Handle changes to log file path."""
+        self.iptables_log = new_path
+        if hasattr(self, 'log_watcher'):
+            self.log_watcher.file_path = new_path
+
+    def _handle_smtp_config_change(self, new_config: dict) -> None:
+        """Handle changes to SMTP configuration."""
+        if hasattr(self, 'alerter'):
+            self.alerter.configure_smtp(new_config)
 
     def stop(self) -> None:
         self.logger.info('Stopping icicle')
@@ -82,7 +100,7 @@ class Icicle:
             )
 
     def send_alert(self, src_address: str, connection_info: dict) -> None:
-        icebox_name = self.config['icebox']['name']
+        icebox_name = self.config_store.get('icebox.name')
 
         start_time = str(connection_info['first_connection'])
         ports = connection_info['connected_ports']
@@ -96,7 +114,7 @@ class Icicle:
         elif num_unique_ports == 1 and 0 in unique_ports:
             subject = f'Icicle Alarm: PING DETECTED: {icebox_name}'
 
-        self.smtp.send_email(
+        self.alerter.alert(
             subject=subject,
             body=(
                 f'Incoming connection detected from {src_address}.\n\n'

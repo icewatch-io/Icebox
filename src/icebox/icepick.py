@@ -5,29 +5,38 @@ import signal
 import threading
 import sys
 
-from modules.smtp import SMTP
+from modules.alerter import Alerter
 from modules.logger import Logger
 from modules.config_store import ConfigStore
-from modules.utils import get_config
 
 
 class Icepick:
 
     def __init__(self) -> None:
         self.config_store = ConfigStore()
-        self.config_store.add_observer(self._handle_config_update)
-        self.config = self.config_store.get_config()
-
         self.shutdown_flag = threading.Event()
         self.logger = Logger.get_logger('icepick')
-        self.smtp = SMTP(self.config['smtp'])
+
+        # Watch for config changes
+        self.config_store.watch('smtp', self._handle_smtp_config_change)
+        self.config_store.watch('icepick', self._handle_icepick_config_change)
+
+        # Initialize components
+        self.alerter = Alerter()
+        if self.config_store.get('smtp'):
+            self.alerter.configure_smtp(self.config_store.get('smtp'))
+
         signal.signal(signal.SIGINT, self.stop)
         signal.signal(signal.SIGTERM, self.stop)
 
-    def _handle_config_update(self, new_config: dict) -> None:
-        """Handle updates to the configuration."""
-        self.config = new_config
-        self.smtp = SMTP(new_config['smtp'])
+    def _handle_smtp_config_change(self, new_config: dict) -> None:
+        """Handle changes to SMTP configuration."""
+        if hasattr(self, 'alerter'):
+            self.alerter.configure_smtp(new_config)
+
+    def _handle_icepick_config_change(self, new_config: list) -> None:
+        """Handle changes to Icepick configuration."""
+        self.logger.info("Icepick configuration updated")
 
     def stop(self) -> None:
         self.logger.info('Stopping icepick')
@@ -36,7 +45,7 @@ class Icepick:
     def run(self) -> None:
         self.logger.info('Starting icepick')
         while not self.shutdown_flag.is_set():
-            for connection in self.config['icepick']:
+            for connection in self.config_store.get('icepick'):
                 self.process_connection(connection)
             time.sleep(random.randint(60, 90))
 
@@ -70,8 +79,8 @@ class Icepick:
 
         if action == 'pass':
             self.logger.info(f"Passing for {connection['name']}")
-        elif action == 'email':
-            self.smtp.send_email(subject, body)
+        elif action == 'alert':
+            self.alerter.alert(subject, body)
         else:
             message = f"Unknown action for {connection['name']}: {action}, connection {result}"
             self.logger.error(message)
@@ -79,5 +88,5 @@ class Icepick:
 
 
 if __name__ == '__main__':
-    icepick = Icepick('config.json')
+    icepick = Icepick()
     icepick.run()
