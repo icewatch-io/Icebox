@@ -14,7 +14,7 @@ class ConfigStore:
             if cls._instance is None:
                 cls._instance = super(ConfigStore, cls).__new__(cls)
                 cls._instance._config = {}
-                cls._instance._observers = {}  # key -> set of callbacks
+                cls._instance._observers = {}
                 cls._instance.logger = Logger.get_logger('config')
                 cls._instance.logger.debug("Created new ConfigStore instance")
             return cls._instance

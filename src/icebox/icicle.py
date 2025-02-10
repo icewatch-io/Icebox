@@ -36,11 +36,13 @@ class Icicle:
         """Handle changes to log file path."""
         self.iptables_log = new_path
         if hasattr(self, 'log_watcher'):
+            self.logger.info(f"Updating log file path to {new_path}")
             self.log_watcher.file_path = new_path
 
     def _handle_smtp_config_change(self, new_config: dict) -> None:
         """Handle changes to SMTP configuration."""
         if hasattr(self, 'alerter'):
+            self.logger.info(f"Updating SMTP configuration")
             self.alerter.configure_smtp(new_config)
 
     def stop(self) -> None:

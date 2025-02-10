@@ -17,11 +17,9 @@ class Icepick:
         self.shutdown_flag = threading.Event()
         self.logger = Logger.get_logger('icepick')
 
-        # Watch for config changes
         self.config_store.watch('smtp', self._handle_smtp_config_change)
         self.config_store.watch('icepick', self._handle_icepick_config_change)
 
-        # Initialize components
         self.alerter = Alerter()
         if self.config_store.get('smtp'):
             self.alerter.configure_smtp(self.config_store.get('smtp'))
@@ -32,11 +30,12 @@ class Icepick:
     def _handle_smtp_config_change(self, new_config: dict) -> None:
         """Handle changes to SMTP configuration."""
         if hasattr(self, 'alerter'):
+            self.logger.info("Updating SMTP configuration")
             self.alerter.configure_smtp(new_config)
 
     def _handle_icepick_config_change(self, new_config: list) -> None:
         """Handle changes to Icepick configuration."""
-        self.logger.info("Icepick configuration updated")
+        self.logger.info(f"Icepick configuration updated: {new_config}")
 
     def stop(self) -> None:
         self.logger.info('Stopping icepick')

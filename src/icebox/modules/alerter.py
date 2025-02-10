@@ -2,10 +2,21 @@ import socket
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import threading
+from queue import Queue
+import time
+from dataclasses import dataclass
 
 from modules.logger import Logger
+
+
+@dataclass
+class Alert:
+    """An alert."""
+    subject: str
+    body: str
+    timestamp: float
 
 
 class Alerter:
@@ -20,36 +31,6 @@ class Alerter:
                 cls._instance._alert_methods = {}
                 cls._instance.logger.debug("Created new Alerter instance")
             return cls._instance
-
-    def configure_smtp(self, smtp_config: dict) -> None:
-        """Configure SMTP alerting."""
-        with self._lock:
-            self.logger.debug("Configuring SMTP alerting")
-            self._alert_methods['smtp'] = {
-                'config': smtp_config,
-                'enabled': smtp_config.get('sending_enabled', False)
-            }
-
-    def remove_method(self, method: str) -> None:
-        """Remove an alert method."""
-        with self._lock:
-            if method in self._alert_methods:
-                self.logger.debug(f"Removing alert method: {method}")
-                del self._alert_methods[method]
-
-    def enable_method(self, method: str) -> None:
-        """Enable an alert method."""
-        with self._lock:
-            if method in self._alert_methods:
-                self.logger.debug(f"Enabling alert method: {method}")
-                self._alert_methods[method]['enabled'] = True
-
-    def disable_method(self, method: str) -> None:
-        """Disable an alert method."""
-        with self._lock:
-            if method in self._alert_methods:
-                self.logger.debug(f"Disabling alert method: {method}")
-                self._alert_methods[method]['enabled'] = False
 
     def alert(self, subject: str, body: str) -> bool:
         """Send an alert through all enabled methods.
@@ -74,11 +55,64 @@ class Alerter:
                     if method == 'smtp':
                         if self._send_smtp_alert(subject, body, settings['config']):
                             success = True
-                    # Add other alert methods here
+                    if method == 'icewatch':
+                        if self._send_icewatch_alert(subject, body, settings['config']):
+                            success = True
                 except Exception as e:
                     self.logger.error(f"Error sending {method} alert: {e}")
 
         return success
+
+    def remove_method(self, method: str) -> None:
+        """Remove an alert method."""
+        with self._lock:
+            if method in self._alert_methods:
+                self.logger.debug(f"Removing alert method: {method}")
+                del self._alert_methods[method]
+
+    def enable_method(self, method: str) -> None:
+        """Enable an alert method."""
+        with self._lock:
+            if method in self._alert_methods:
+                self.logger.debug(f"Enabling alert method: {method}")
+                self._alert_methods[method]['enabled'] = True
+
+    def disable_method(self, method: str) -> None:
+        """Disable an alert method."""
+        with self._lock:
+            if method in self._alert_methods:
+                self.logger.debug(f"Disabling alert method: {method}")
+                self._alert_methods[method]['enabled'] = False
+
+    def configure_icewatch(self, queue: Queue) -> None:
+        """Configure Icewatch alerting with external queue."""
+        with self._lock:
+            self.logger.debug("Configuring Icewatch alerting")
+            self._alert_methods['icewatch'] = {
+                'config': {'queue': queue},
+                'enabled': True
+            }
+
+    def _send_icewatch_alert(self, subject: str, body: str, config: dict) -> bool:
+        """Queue an alert for Icewatch."""
+        from icewatch import IcewatchClient
+        try:
+            success = IcewatchClient.queue_alert(subject, body)
+            if success:
+                self.logger.debug(f"Queued alert for Icewatch: {subject}")
+            return success
+        except Exception as e:
+            self.logger.error(f"Failed to queue alert: {e}")
+            return False
+
+    def configure_smtp(self, smtp_config: dict) -> None:
+        """Configure SMTP alerting."""
+        with self._lock:
+            self.logger.debug("Configuring SMTP alerting")
+            self._alert_methods['smtp'] = {
+                'config': smtp_config,
+                'enabled': smtp_config.get('sending_enabled', False)
+            }
 
     def _send_smtp_alert(self, subject: str, body: str, smtp_config: dict) -> bool:
         """Send an alert via SMTP."""

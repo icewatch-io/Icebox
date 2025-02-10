@@ -6,7 +6,6 @@ from modules.alerter import Alerter
 from modules.logger import Logger
 from modules.sqlite import SQLiteDB
 from modules.log_watcher import LogWatcher
-from modules.utils import validate_config
 from modules.config_store import ConfigStore
 
 
@@ -42,16 +41,19 @@ class Snowdog:
         """Handle changes to log file path."""
         self.iptables_log = new_path
         if hasattr(self, 'log_watcher'):
+            self.logger.info(f"Updating log file path to {new_path}")
             self.log_watcher.file_path = new_path
 
     def _handle_smtp_config_change(self, new_config: dict) -> None:
         """Handle changes to SMTP configuration."""
         if hasattr(self, 'alerter'):
+            self.logger.info(f"Updating SMTP configuration")
             self.alerter.configure_smtp(new_config)
 
     def _handle_snowdog_config_change(self, new_config: dict) -> None:
         """Handle changes to Snowdog configuration."""
         if hasattr(self, 'db'):
+            self.logger.info(f"Updating Snowdog database file path to {new_config['db_file']}")
             self.db = SQLiteDB(new_config['db_file'])
 
     def stop(self) -> None:
