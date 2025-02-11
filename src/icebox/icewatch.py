@@ -4,12 +4,14 @@ import queue
 import time
 import threading
 import requests
+import logging
 from typing import Optional
 from pathlib import Path
 
 from modules.config_store import ConfigStore
 from modules.logger import Logger
 from modules.alerter import Alert
+from modules.utils import get_raw_http
 
 
 class IcewatchClient:
@@ -74,7 +76,7 @@ class IcewatchClient:
 
         Returns config from either disk or the config store."""
         try:
-            return self.config_store.get('')
+            return self.config_store.get_config()
         except (KeyError, TypeError):
             pass
 
@@ -100,7 +102,7 @@ class IcewatchClient:
         """Generate SHA-256 hash of config JSON string."""
         if config is None:
             return ''
-        config_str = json.dumps(config, sort_keys=True)
+        config_str = json.dumps(config, indent=4)
         return hashlib.sha256(config_str.encode()).hexdigest()
 
     def _load_cached_config(self) -> bool:
@@ -117,77 +119,13 @@ class IcewatchClient:
             self.logger.error(f"Error loading cached config: {e}")
             return False
 
-    def check_in(self) -> bool:
-        """Perform check-in with Icebox server.
-
-        Returns:
-            bool: True if check-in was successful
-        """
-        current_config = self._read_config()
-        config_hash = self._get_config_hash(current_config)
-
-        headers = {
-            'Authorization': self.api_key,
-            'Content-Type': 'application/json'
-        }
-
-        data = {
-            'id': self.device_id,
-            'configHash': config_hash
-        }
-
-        self.logger.info(f"Sending check-in request to {self.api_url}/check-in")
-        self.logger.debug(f"data: {data}")
-
-        try:
-            response = requests.post(
-                f'{self.api_url}/check-in',
-                headers=headers,
-                json=data,
-                timeout=30
-            )
-
-            if response.status_code == 200:
-                response_data = response.json()
-
-                if 'config' in response_data:
-                    new_config = json.loads(response_data['config'])
-                    self._write_config(new_config)
-
-                return True
-
-            elif response.status_code == 401:
-                message = "Authentication failed. Please check your API key."
-                self.logger.error(message)
-                raise Exception(message)
-            else:
-                message = f"Check-in failed: {response.json().get('error', 'Unknown error')}"
-                self.logger.error(message)
-                raise Exception(message)
-
-        except requests.RequestException as e:
-            message = f"Network error during check-in: {str(e)}"
-            self.logger.error(message)
-            raise Exception(message)
-
-        return False
-
     def wait_for_initial_config(self, timeout: int = 30) -> bool:
         """Wait for initial config to be received."""
         return self.initial_config_event.wait(timeout)
 
-    def send_alerts(self) -> bool:
-        """Send queued alerts to Icewatch server."""
-        alerts = self._get_queued_alerts(max_alerts=100)
-        if not alerts:
-            return True
-
-        headers = {
-            'Authorization': self.api_key,
-            'Content-Type': 'application/json'
-        }
-
-        data = {
+    def _format_alerts_data(self, alerts: list[Alert]) -> dict:
+        """Format alerts for sending to server."""
+        return {
             'id': self.device_id,
             'alerts': [
                 {
@@ -199,12 +137,99 @@ class IcewatchClient:
             ]
         }
 
+    def _make_api_request(
+        self,
+        endpoint: str,
+        method: str,
+        data: dict = None,
+        headers: dict = None
+    ) -> dict:
+        """Make an API request to the Icebox server."""
+
+        request_headers = {
+            'Authorization': self.api_key,
+            'Content-Type': 'application/json'
+        }
+
+        if headers:
+            request_headers.update(headers)
+
+        response = requests.request(
+            method=method,
+            url=f'{self.api_url}/{endpoint}',
+            headers=request_headers,
+            json=data,
+            timeout=30
+        )
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            raw_request, raw_response = get_raw_http(response)
+            self.logger.debug(
+                f"\nHTTP Request:\n{raw_request}\n\n"
+                f"HTTP Response:\n{raw_response}"
+            )
+
+        return response
+
+    def check_in(self) -> bool:
+        """Perform check-in with Icebox server.
+
+        Returns:
+            bool: True if check-in was successful
+        """
+        current_config = self._read_config()
+        config_hash = self._get_config_hash(current_config)
+
+        data = {
+            'id': self.device_id,
+            'configHash': config_hash
+        }
+
         try:
-            response = requests.post(
-                f'{self.api_url}/alert',
-                headers=headers,
-                json=data,
-                timeout=30
+            response = self._make_api_request(
+                endpoint='check-in',
+                method='POST',
+                data=data
+            )
+
+            if response.status_code == 200:
+                response_data = response.json()
+
+                if 'config' in response_data:
+                    new_config = response_data['config']
+                    self._write_config(new_config)
+
+                return True
+
+            elif response.status_code == 401:
+                message = "Authentication failed. Please check your API key."
+                self.logger.error(message)
+                raise Exception(message)
+            else:
+                message = f"Check in failed: {response.json().get('error', 'Unknown error')}"
+                self.logger.error(message)
+                raise Exception(message)
+
+        except requests.RequestException as e:
+            message = f"Network error during check in: {str(e)}"
+            self.logger.error(message)
+            raise Exception(message)
+
+        return False
+
+    def send_alerts(self) -> bool:
+        """Send queued alerts to Icewatch server."""
+        alerts = self._get_queued_alerts(max_alerts=100)
+        if not alerts:
+            return True
+
+        data = self._format_alerts_data(alerts)
+
+        try:
+            response = self._make_api_request(
+                endpoint='alert',
+                method='POST',
+                data=data
             )
 
             if response.status_code == 200:
@@ -226,15 +251,15 @@ class IcewatchClient:
         """Run the Icewatch client loop."""
         self.logger.info("Starting Icewatch client")
         last_alert_time = 0
-        last_checkin_time = 0
+        last_check_in_time = 0
 
         while not self.shutdown_flag.is_set():
             try:
                 current_time = time.time()
 
-                if current_time - last_checkin_time >= 60:
+                if current_time - last_check_in_time >= 60:
                     self.check_in()
-                    last_checkin_time = current_time
+                    last_check_in_time = current_time
 
                 if current_time - last_alert_time >= 10:
                     self.send_alerts()

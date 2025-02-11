@@ -32,6 +32,11 @@ class ConfigStore:
             self._config = new_config
             self._notify_observers(old_config, new_config)
 
+    def get_config(self) -> Dict:
+        """Get the current config."""
+        with self._lock:
+            return self._config.copy()
+
     def get(self, key: str, default: Any = None) -> Any:
         """Get a config value by key path (e.g. 'smtp.server')."""
         with self._lock:
