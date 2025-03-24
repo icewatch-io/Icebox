@@ -65,7 +65,7 @@ class Icepick:
         )
 
         result = 'succeeded' if connection_status else 'failed'
-        subject = f'Icepick Alarm: {connection["name"]}: Connection {result.upper()}'
+        subject = f'{connection["name"]}: Connection {result.upper()}'
         body = (
             f'{connection["name"]} ({connection["host"]}: {connection["port"]})\n'
             f'Config: {connection}'
@@ -79,7 +79,11 @@ class Icepick:
         if action == 'pass':
             self.logger.info(f"Passing for {connection['name']}")
         elif action == 'alert':
-            self.alerter.alert(subject, body)
+            self.alerter.alert(
+                source='icepick',
+                subject=subject,
+                body=body
+            )
         else:
             message = f"Unknown action for {connection['name']}: {action}, connection {result}"
             self.logger.error(message)

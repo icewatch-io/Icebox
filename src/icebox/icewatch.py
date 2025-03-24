@@ -13,6 +13,8 @@ from modules.logger import Logger
 from modules.alerter import Alert
 from modules.utils import get_raw_http
 
+ALERT_ENDPOINT='alert'
+
 
 class IcewatchClient:
     _instance = None
@@ -48,13 +50,31 @@ class IcewatchClient:
         self.initialized = True
 
     @classmethod
-    def queue_alert(cls, subject: str, body: str) -> bool:
-        """Queue an alert for sending to Icewatch."""
+    def queue_alert(
+        cls,
+        source: str,
+        subject: str,
+        body: str,
+        idempotency_token: str
+    ) -> bool:
+        """Queue an alert for sending to Icewatch.
+
+        Args:
+            source: The source/module generating the alert
+            subject: Alert subject line
+            body: Alert message body
+            idempotency_token: A unique ID
+
+        Returns:
+            bool: True if alert was queued successfully
+        """
         try:
             alert = Alert(
+                source=source,
                 subject=subject,
                 body=body,
-                timestamp=time.time()
+                timestamp=time.time(),
+                idempotency_token=idempotency_token
             )
             cls._alert_queue.put(alert)
             return True
@@ -124,17 +144,26 @@ class IcewatchClient:
         return self.initial_config_event.wait(timeout)
 
     def _format_alerts_data(self, alerts: list[Alert]) -> dict:
-        """Format alerts for sending to server."""
-        return {
-            'id': self.device_id,
-            'alerts': [
+        """Format alerts for the Icewatch API."""
+        formatted_alerts = []
+        idempotency_tokens = []
+        for alert in alerts:
+            if alert.idempotency_token in idempotency_tokens:
+                continue
+            idempotency_tokens.append(alert.idempotency_token)
+            formatted_alerts.append(
                 {
+                    'source': alert.source,
                     'subject': alert.subject,
                     'body': alert.body,
-                    'timestamp': alert.timestamp
+                    'timestamp': alert.timestamp,
+                    'idempotencyToken': alert.idempotency_token
                 }
-                for alert in alerts
-            ]
+            )
+
+        return {
+            'id': self.device_id,
+            'alerts': formatted_alerts,
         }
 
     def _make_api_request(
@@ -227,7 +256,7 @@ class IcewatchClient:
 
         try:
             response = self._make_api_request(
-                endpoint='alert',
+                endpoint=ALERT_ENDPOINT,
                 method='POST',
                 data=data
             )

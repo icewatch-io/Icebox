@@ -7,16 +7,20 @@ import threading
 from queue import Queue
 import time
 from dataclasses import dataclass
+from uuid import uuid4
 
 from modules.logger import Logger
+from modules.config_store import ConfigStore
 
 
 @dataclass
 class Alert:
-    """An alert."""
+    """An alert from an Icebox module."""
+    source: str
     subject: str
     body: str
     timestamp: float
+    idempotency_token: str
 
 
 class Alerter:
@@ -30,16 +34,35 @@ class Alerter:
                 cls._instance.logger = Logger.get_logger('alerter')
                 cls._instance._alert_methods = {}
                 cls._instance.logger.debug("Created new Alerter instance")
+                cls._instance.config_store = ConfigStore()
             return cls._instance
 
-    def alert(self, subject: str, body: str) -> bool:
+    def alert(self, source: str, subject: str, body: str) -> bool:
         """Send an alert through all enabled methods.
+
+        Args:
+            source: The source/module generating the alert
+            subject: Alert subject line
+            body: Alert message body
 
         Returns:
             bool: True if at least one method succeeded
         """
         self.logger.debug(f"Processing alert: {subject}")
         success = False
+
+        alert_filters = self.config_store.get('alert_filters')
+        if alert_filters:
+            filtered = False
+            for filter in alert_filters:
+                if filter['source'] == source:
+                    if filter['subject'] and filter['subject'] in subject:
+                        filtered = True
+                    if filter['body'] and filter['body'] in body:
+                        filtered = True
+            if filtered:
+                self.logger.debug(f"Alert filtered: {subject}")
+                return False
 
         with self._lock:
             if not self._alert_methods:
@@ -51,12 +74,20 @@ class Alerter:
                     self.logger.debug(f"Skipping disabled alert method: {method}")
                     continue
 
+                alert = {
+                    'source': source,
+                    'subject': subject,
+                    'body': body,
+                    'config': settings['config'],
+                    'idempotency_token': str(uuid4())
+                }
+
                 try:
                     if method == 'smtp':
-                        if self._send_smtp_alert(subject, body, settings['config']):
+                        if self._send_smtp_alert(**alert):
                             success = True
                     if method == 'icewatch':
-                        if self._send_icewatch_alert(subject, body, settings['config']):
+                        if self._send_icewatch_alert(**alert):
                             success = True
                 except Exception as e:
                     self.logger.error(f"Error sending {method} alert: {e}")
@@ -93,11 +124,23 @@ class Alerter:
                 'enabled': True
             }
 
-    def _send_icewatch_alert(self, subject: str, body: str, config: dict) -> bool:
+    def _send_icewatch_alert(
+        self,
+        source: str,
+        subject: str,
+        body: str,
+        config: dict,
+        idempotency_token: str
+    ) -> bool:
         """Queue an alert for Icewatch."""
         from icewatch import IcewatchClient
         try:
-            success = IcewatchClient.queue_alert(subject, body)
+            success = IcewatchClient.queue_alert(
+                source,
+                subject,
+                body,
+                idempotency_token
+            )
             if success:
                 self.logger.debug(f"Queued alert for Icewatch: {subject}")
             return success
@@ -114,12 +157,20 @@ class Alerter:
                 'enabled': smtp_config.get('sending_enabled', False)
             }
 
-    def _send_smtp_alert(self, subject: str, body: str, smtp_config: dict) -> bool:
+    def _send_smtp_alert(
+        self,
+        source: str,
+        subject: str,
+        body: str,
+        config: dict,
+        idempotency_token: str
+    ) -> bool:
         """Send an alert via SMTP."""
+        smtp_config = config
         msg = MIMEMultipart()
         msg['From'] = smtp_config['from']
         msg['To'] = smtp_config['to']
-        msg['Subject'] = subject
+        msg['Subject'] = f"[{source}] {subject}"
         msg.attach(MIMEText(body, 'plain'))
 
         try:

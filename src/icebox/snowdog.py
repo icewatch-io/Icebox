@@ -94,8 +94,9 @@ class Snowdog:
             elif self.has_unknown_macs(message):
                 if self.config_store.get('snowdog.alerting'):
                     self.alerter.alert(
-                        f'Snowdog Alert: {self.config_store.get("icebox.name")}',
-                        f'Unknown MAC address detected.\n{message}'
+                        source='snowdog',
+                        subject=f'Unknown MAC address detected',
+                        body=f'An unknown MAC address was detected.\n{message}'
                     )
                 else:
                     self.logger.warn(

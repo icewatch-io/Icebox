@@ -110,13 +110,14 @@ class Icicle:
         unique_ports = set(ports)
         num_unique_ports = len(unique_ports)
 
-        subject = f'Icicle Alarm: {icebox_name}'
+        subject = f'CONNECTION DETECTED'
         if num_unique_ports > 3:
-            subject = f'Icicle Alarm: PORT SCAN DETECTED: {icebox_name}'
+            subject = f'PORT SCAN DETECTED'
         elif num_unique_ports == 1 and 0 in unique_ports:
-            subject = f'Icicle Alarm: PING DETECTED: {icebox_name}'
+            subject = f'PING DETECTED'
 
         self.alerter.alert(
+            source='icicle',
             subject=subject,
             body=(
                 f'Incoming connection detected from {src_address}.\n\n'
