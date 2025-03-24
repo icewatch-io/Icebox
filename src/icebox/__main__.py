@@ -78,6 +78,11 @@ def init_config() -> None:
 
 
 def main() -> None:
+    # Set up signal handlers first in main thread
+    global shutdown_flag, instances
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     Logger.configure(
         log_file='/var/log/icebox/icebox.log',
         log_level='DEBUG',
@@ -85,12 +90,8 @@ def main() -> None:
     logger = Logger.get_logger('main')
     logger.info("Icebox starting...")
 
-    global shutdown_flag, instances
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-
     init_config()
-    config_store = ConfigStore()
+    config_store = ConfigStore(shutdown_flag=shutdown_flag)
 
     Logger.configure(
         log_file=config_store.get('log.file'),

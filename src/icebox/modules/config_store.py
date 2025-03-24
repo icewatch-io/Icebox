@@ -9,13 +9,14 @@ class ConfigStore:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls):
+    def __new__(cls, shutdown_flag: threading.Event = None):
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(ConfigStore, cls).__new__(cls)
                 cls._instance._config = {}
                 cls._instance._observers = {}
                 cls._instance.logger = Logger.get_logger('config')
+                cls._instance.shutdown_flag = shutdown_flag or threading.Event()
                 cls._instance.logger.debug("Created new ConfigStore instance")
             return cls._instance
 

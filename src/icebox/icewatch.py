@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 from pathlib import Path
 
+from icepick import Icepick
 from modules.config_store import ConfigStore
 from modules.logger import Logger
 from modules.alerter import Alert
@@ -29,7 +30,8 @@ class IcewatchClient:
             return cls._instance
 
     def __init__(self, api_url: str = None, device_id: str = None,
-                 api_key: str = None, config_path: str = None):
+                 api_key: str = None, config_path: str = None,
+                 config_store: Optional[ConfigStore] = None):
         """Initialize Icewatch client."""
         if self.initialized:
             return
@@ -39,14 +41,34 @@ class IcewatchClient:
 
         self.api_url = api_url.rstrip('/')
         self.device_id = device_id
-        self.config_store = ConfigStore()
         self.api_key = api_key
         self.config_path = Path(config_path)
         self.cached_config_path = Path('/etc/icebox/config-icewatch.json')
         self.logger = Logger.get_logger('icewatch')
-        self.shutdown_flag = threading.Event()
         self.initial_config_event = threading.Event()
         self.alert_queue = self._alert_queue
+
+        # Use provided ConfigStore or create new one
+        self.logger.info("Setting up configuration store")
+        self.config_store = config_store or ConfigStore()
+        self.shutdown_flag = self.config_store.shutdown_flag
+        config = self.config_store.get('icepick', [])
+        smtp_config = self.config_store.get('smtp')
+
+        # Create and configure Icepick after ConfigStore is ready
+        self.icepick = Icepick(shutdown_flag=self.shutdown_flag)
+        if config:
+            self.icepick.set_connections(config)
+        if smtp_config:
+            self.icepick.alerter.configure_smtp(smtp_config)
+
+        # Set up config watchers
+        self.config_store.watch('icepick', self.icepick.set_connections)
+        self.config_store.watch('smtp', lambda config: self.icepick.alerter.configure_smtp(config))
+
+        # Create thread after all configuration is done
+        self.icepick_thread = threading.Thread(target=self.icepick.run)
+        self.icepick_thread.daemon = True
         self.initialized = True
 
     @classmethod
@@ -209,9 +231,14 @@ class IcewatchClient:
         current_config = self._read_config()
         config_hash = self._get_config_hash(current_config)
 
+        icepick = Icepick()
+        icepick_results = icepick.get_latest_results()
+        print(f'Icepick results:', icepick_results)
+
         data = {
             'id': self.device_id,
-            'configHash': config_hash
+            'configHash': config_hash,
+            'icepickResults': icepick_results
         }
 
         try:
@@ -227,6 +254,9 @@ class IcewatchClient:
                 if 'config' in response_data:
                     new_config = response_data['config']
                     self._write_config(new_config)
+
+                if hasattr(icepick, 'latest_results'):
+                    icepick.latest_results.clear()
 
                 return True
 
@@ -282,6 +312,7 @@ class IcewatchClient:
         last_alert_time = 0
         last_check_in_time = 0
 
+        self.icepick_thread.start()
         while not self.shutdown_flag.is_set():
             try:
                 current_time = time.time()
@@ -302,4 +333,7 @@ class IcewatchClient:
     def stop(self) -> None:
         """Stop the Icewatch client."""
         self.logger.info("Stopping Icewatch client")
+        if hasattr(self, 'icepick'):
+            self.icepick.stop()
+            self.icepick_thread.join(timeout=5.0)
         self.shutdown_flag.set()
