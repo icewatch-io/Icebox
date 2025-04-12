@@ -10,15 +10,24 @@ from modules.logger import Logger
 
 
 class Icepick:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, shutdown_flag: threading.Event = None) -> None:
-        self.shutdown_flag = shutdown_flag or threading.Event()
-        self._results_lock = threading.Lock()
-        self.latest_results = []
-        self.logger = Logger.get_logger('icepick')
-        self.connections = []
+        if not Icepick._initialized:
+            self.shutdown_flag = shutdown_flag or threading.Event()
+            self._results_lock = threading.Lock()
+            self.latest_results = []
+            self.connections = []
 
-        self.alerter = Alerter()
+            self.logger = Logger.get_logger('icepick')
+            self.alerter = Alerter()
+            Icepick._initialized = True
 
     def _handle_smtp_config_change(self, new_config: dict) -> None:
         """Handle changes to SMTP configuration."""
@@ -59,7 +68,6 @@ class Icepick:
 
     def get_latest_results(self) -> list:
         """Get the latest monitoring results in a thread-safe way."""
-        print(f"Getting latest results: {self.latest_results}")
         with self._results_lock:
             return self.latest_results.copy()
 
@@ -74,7 +82,6 @@ class Icepick:
         status = 'success' if connection_status else 'failure'
         result = {'ruleId': connection['id'], 'timestamp': time.time(), 'result': status}
         self.latest_results.append(result)
-        print(f"ACTUAL - latest_results: {self.latest_results}")
 
         result_text = 'succeeded' if connection_status else 'failed'
         subject = f'{connection["name"]}: Connection {result_text.upper()}'

@@ -231,10 +231,7 @@ class IcewatchClient:
         current_config = self._read_config()
         config_hash = self._get_config_hash(current_config)
 
-        icepick = Icepick()
-        icepick_results = icepick.get_latest_results()
-        print(f'Icepick results:', icepick_results)
-
+        icepick_results = self.icepick.get_latest_results()
         data = {
             'id': self.device_id,
             'configHash': config_hash,
@@ -255,8 +252,8 @@ class IcewatchClient:
                     new_config = response_data['config']
                     self._write_config(new_config)
 
-                if hasattr(icepick, 'latest_results'):
-                    icepick.latest_results.clear()
+                if hasattr(self.icepick, 'latest_results'):
+                    self.icepick.latest_results.clear()
 
                 return True
 
