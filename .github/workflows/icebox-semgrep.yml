@@ -1,0 +1,28 @@
+name: icewatch-semgrep
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+
+jobs:
+  Semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Semgrep
+        run: |
+          pip install semgrep
+      - name: Semgrep scan
+        run: |
+          semgrep scan \
+            --config "p/default" \
+            --config "p/python" \
+            --config "p/secrets" \
+            --config "p/github-actions" \
+            --config "p/ci" \
+            --max-log-list-entries 10000 \
+            --no-git-ignore \
+            --metrics=off \
+            --verbose \
+            --error

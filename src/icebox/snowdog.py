@@ -62,8 +62,6 @@ class Snowdog:
         try:
             if hasattr(self, 'log_watcher'):
                 self.log_watcher.stop()
-            if hasattr(self, 'db'):
-                self.db.close()
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
             raise
