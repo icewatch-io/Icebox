@@ -66,9 +66,6 @@ class IcewatchClient:
         self.config_store.watch('icepick', self.icepick.set_connections)
         self.config_store.watch('smtp', lambda config: self.icepick.alerter.configure_smtp(config))
 
-        # Create thread after all configuration is done
-        self.icepick_thread = threading.Thread(target=self.icepick.run)
-        self.icepick_thread.daemon = True
         self.initialized = True
 
     @classmethod
@@ -144,8 +141,9 @@ class IcewatchClient:
         """Generate SHA-256 hash of config JSON string."""
         if config is None:
             return ''
-        config_str = json.dumps(config, indent=4)
-        return hashlib.sha256(config_str.encode()).hexdigest()
+        config_str = json.dumps(config, separators=(',', ':'))
+        config_hash = hashlib.sha256(config_str.encode('utf-8')).hexdigest()
+        return config_hash
 
     def _load_cached_config(self) -> bool:
         """Load config from cache file."""
@@ -309,7 +307,6 @@ class IcewatchClient:
         last_alert_time = 0
         last_check_in_time = 0
 
-        self.icepick_thread.start()
         while not self.shutdown_flag.is_set():
             try:
                 current_time = time.time()
@@ -330,7 +327,4 @@ class IcewatchClient:
     def stop(self) -> None:
         """Stop the Icewatch client."""
         self.logger.info("Stopping Icewatch client")
-        if hasattr(self, 'icepick'):
-            self.icepick.stop()
-            self.icepick_thread.join(timeout=5.0)
         self.shutdown_flag.set()
