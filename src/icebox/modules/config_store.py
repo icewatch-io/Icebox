@@ -21,7 +21,7 @@ class ConfigStore:
             return cls._instance
 
     def load_config(self, config_path: str) -> None:
-        """Load initial config from file."""
+        """Load config from file."""
         self.logger.debug(f"Loading config from {config_path}")
         with open(config_path) as f:
             self.update_config(json.load(f))

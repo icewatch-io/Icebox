@@ -3,10 +3,10 @@ import time
 import random
 import threading
 import sys
+import json
 
 from modules.alerter import Alerter
 from modules.logger import Logger
-
 
 
 class Icepick:
@@ -25,13 +25,13 @@ class Icepick:
             self.latest_results = []
             self.connections = []
 
-            self.logger = Logger.get_logger('icepick')
+            self.logger = Logger.get_logger("icepick")
             self.alerter = Alerter()
             Icepick._initialized = True
 
     def _handle_smtp_config_change(self, new_config: dict) -> None:
         """Handle changes to SMTP configuration."""
-        if hasattr(self, 'alerter'):
+        if hasattr(self, "alerter"):
             self.logger.info("Updating SMTP configuration")
             self.alerter.configure_smtp(new_config)
 
@@ -40,7 +40,7 @@ class Icepick:
         self.logger.info(f"Icepick configuration updated: {new_config}")
 
     def stop(self) -> None:
-        self.logger.info('Stopping icepick')
+        self.logger.info("Stopping icepick")
         self.shutdown_flag.set()
 
     def set_connections(self, connections: list) -> None:
@@ -48,7 +48,7 @@ class Icepick:
         self.connections = connections
 
     def run(self) -> None:
-        self.logger.info('Starting icepick')
+        self.logger.info("Starting icepick")
         while not self.shutdown_flag.is_set():
             results = []
             for connection in self.connections:
@@ -72,43 +72,39 @@ class Icepick:
             return self.latest_results.copy()
 
     def process_connection(self, connection: dict) -> dict:
-        failure_action = connection['failure_action']
-        success_action = connection['success_action']
+        failure_action = connection["failure_action"]
+        success_action = connection["success_action"]
         connection_status = self.check_tcp(
-            host=connection['host'],
-            port=connection['port']
+            host=connection["host"], port=connection["port"]
         )
 
-        status = 'success' if connection_status else 'failure'
-        result = {'ruleId': connection['id'], 'timestamp': time.time(), 'result': status}
+        status = "success" if connection_status else "failure"
+        result = {
+            "ruleId": connection["id"],
+            "timestamp": time.time(),
+            "result": status,
+        }
         self.latest_results.append(result)
 
-        result_text = 'succeeded' if connection_status else 'failed'
+        result_text = "succeeded" if connection_status else "failed"
         subject = f'{connection["name"]}: Connection {result_text.upper()}'
-        body = (
-            f'{connection["name"]} ({connection["host"]}: {connection["port"]})\n'
-            f'Config: {connection}'
-        )
+        body = json.dumps(connection, indent=2)
         action = success_action if connection_status else failure_action
 
         self.logger.info(
             f"Processing {connection['name']}: connection {result}, action: {action}"
         )
 
-        if action == 'pass':
+        if action == "pass":
             self.logger.info(f"Passing for {connection['name']}")
-        elif action == 'alert':
-            self.alerter.alert(
-                source='icepick',
-                subject=subject,
-                body=body
-            )
+        elif action == "alert":
+            self.alerter.alert(source="icepick", subject=subject, body=body)
         else:
             message = f"Unknown action for {connection['name']}: {action}, connection {result}"
             self.logger.error(message)
             raise ValueError(message)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     icepick = Icepick()
     icepick.run()

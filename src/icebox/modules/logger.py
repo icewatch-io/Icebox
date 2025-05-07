@@ -9,12 +9,12 @@ class ColorFormatter(logging.Formatter):
     """Custom formatter with colored output for different log levels."""
 
     COLORS = {
-        'DEBUG': '\033[36m',
-        'INFO': '\033[32m',
-        'WARNING': '\033[33m',
-        'ERROR': '\033[31m',
-        'CRITICAL': '\033[35m',
-        'RESET': '\033[0m'
+        "DEBUG": "\033[36m",
+        "INFO": "\033[32m",
+        "WARNING": "\033[33m",
+        "ERROR": "\033[31m",
+        "CRITICAL": "\033[35m",
+        "RESET": "\033[0m",
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -40,10 +40,10 @@ class Logger:
         numeric_level = getattr(logging, log_level.upper(), logging.INFO)
 
         file_formatter = logging.Formatter(
-            '[%(asctime)s] [%(name)s] %(levelname)s %(message)s'
+            "[%(asctime)s] [%(name)s] %(levelname)s %(message)s"
         )
         console_formatter = ColorFormatter(
-            '[%(asctime)s] [%(name)s] %(levelname)s %(message)s'
+            "[%(asctime)s] [%(name)s] %(levelname)s %(message)s"
         )
 
         root_logger = logging.getLogger()
@@ -70,5 +70,5 @@ class Logger:
 class SanitizeLogFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = re.sub(r'[\n\r\t]', '_', str(record.msg))
+        record.msg = re.sub(r"[\n\r\t]", "_", str(record.msg))
         return True

@@ -45,12 +45,16 @@ mkdir -p /opt/icebox/icebox
 mkdir -p /etc/icebox
 mkdir -p /var/log/icebox
 
+touch /etc/icebox/config-icewatch.json
+chmod "$ICEBOX_USER":"$ICEBOX_USER" /etc/icebox/config-icewatch.json
+
 gecho "Installing Icebox"
 DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
 git clone https://github.com/icewatch-io/icebox.git
 cd Icebox
 mv src/icebox /opt/icebox
+chmod +x /opt/icebox/icebox/iptables.sh
 
 if [ ! -f /etc/icebox/config.json ]; then
     gecho "Using example config"

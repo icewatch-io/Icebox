@@ -14,7 +14,7 @@ from modules.logger import Logger
 from modules.alerter import Alert
 from modules.utils import get_raw_http
 
-ALERT_ENDPOINT='alert'
+ALERT_ENDPOINT = "alert"
 
 
 class IcewatchClient:
@@ -29,22 +29,26 @@ class IcewatchClient:
                 cls._instance.initialized = False
             return cls._instance
 
-    def __init__(self, api_url: str = None, device_id: str = None,
-                 api_key: str = None, config_path: str = None,
-                 config_store: Optional[ConfigStore] = None):
+    def __init__(
+        self,
+        api_url: str = None,
+        device_id: str = None,
+        api_key: str = None,
+        config_store: Optional[ConfigStore] = None,
+    ):
         """Initialize Icewatch client."""
         if self.initialized:
             return
 
-        if not all([api_url, device_id, api_key, config_path]):
+        if not all([api_url, device_id, api_key]):
             raise ValueError("All initialization parameters are required")
 
-        self.api_url = api_url.rstrip('/')
+        self.api_url = api_url.rstrip("/")
         self.device_id = device_id
         self.api_key = api_key
-        self.config_path = Path(config_path)
-        self.cached_config_path = Path('/etc/icebox/config-icewatch.json')
-        self.logger = Logger.get_logger('icewatch')
+        self.default_config_path = Path("/etc/icebox/config.json")
+        self.cached_config_path = Path("/etc/icebox/config-icewatch.json")
+        self.logger = Logger.get_logger("icewatch")
         self.initial_config_event = threading.Event()
         self.alert_queue = self._alert_queue
 
@@ -52,8 +56,8 @@ class IcewatchClient:
         self.logger.info("Setting up configuration store")
         self.config_store = config_store or ConfigStore()
         self.shutdown_flag = self.config_store.shutdown_flag
-        config = self.config_store.get('icepick', [])
-        smtp_config = self.config_store.get('smtp')
+        config = self.config_store.get("icepick", [])
+        smtp_config = self.config_store.get("smtp")
 
         # Create and configure Icepick after ConfigStore is ready
         self.icepick = Icepick(shutdown_flag=self.shutdown_flag)
@@ -63,18 +67,16 @@ class IcewatchClient:
             self.icepick.alerter.configure_smtp(smtp_config)
 
         # Set up config watchers
-        self.config_store.watch('icepick', self.icepick.set_connections)
-        self.config_store.watch('smtp', lambda config: self.icepick.alerter.configure_smtp(config))
+        self.config_store.watch("icepick", self.icepick.set_connections)
+        self.config_store.watch(
+            "smtp", lambda config: self.icepick.alerter.configure_smtp(config)
+        )
 
         self.initialized = True
 
     @classmethod
     def queue_alert(
-        cls,
-        source: str,
-        subject: str,
-        body: str,
-        idempotency_token: str
+        cls, source: str, subject: str, body: str, idempotency_token: str
     ) -> bool:
         """Queue an alert for sending to Icewatch.
 
@@ -93,7 +95,7 @@ class IcewatchClient:
                 subject=subject,
                 body=body,
                 timestamp=time.time(),
-                idempotency_token=idempotency_token
+                idempotency_token=idempotency_token,
             )
             cls._alert_queue.put(alert)
             return True
@@ -123,8 +125,8 @@ class IcewatchClient:
             if self.cached_config_path.exists():
                 with open(self.cached_config_path) as f:
                     return json.load(f)
-            if self.config_path.exists():
-                with open(self.config_path) as f:
+            if self.default_config_path.exists():
+                with open(self.default_config_path) as f:
                     return json.load(f)
             return None
         except json.JSONDecodeError:
@@ -132,7 +134,7 @@ class IcewatchClient:
 
     def _write_config(self, config: dict) -> None:
         """Write config to cache file and update global store."""
-        with open(self.cached_config_path, 'w') as f:
+        with open(self.cached_config_path, "w") as f:
             json.dump(config, f, indent=2)
         self.config_store.update_config(config)
         self.initial_config_event.set()
@@ -140,9 +142,9 @@ class IcewatchClient:
     def _get_config_hash(self, config: Optional[dict]) -> str:
         """Generate SHA-256 hash of config JSON string."""
         if config is None:
-            return ''
-        config_str = json.dumps(config, separators=(',', ':'))
-        config_hash = hashlib.sha256(config_str.encode('utf-8')).hexdigest()
+            return ""
+        config_str = json.dumps(config, separators=(",", ":"))
+        config_hash = hashlib.sha256(config_str.encode("utf-8")).hexdigest()
         return config_hash
 
     def _load_cached_config(self) -> bool:
@@ -173,31 +175,27 @@ class IcewatchClient:
             idempotency_tokens.append(alert.idempotency_token)
             formatted_alerts.append(
                 {
-                    'source': alert.source,
-                    'subject': alert.subject,
-                    'body': alert.body,
-                    'timestamp': alert.timestamp,
-                    'idempotencyToken': alert.idempotency_token
+                    "source": alert.source,
+                    "subject": alert.subject,
+                    "body": alert.body,
+                    "timestamp": alert.timestamp,
+                    "idempotencyToken": alert.idempotency_token,
                 }
             )
 
         return {
-            'id': self.device_id,
-            'alerts': formatted_alerts,
+            "id": self.device_id,
+            "alerts": formatted_alerts,
         }
 
     def _make_api_request(
-        self,
-        endpoint: str,
-        method: str,
-        data: dict = None,
-        headers: dict = None
+        self, endpoint: str, method: str, data: dict = None, headers: dict = None
     ) -> dict:
         """Make an API request to the Icebox server."""
 
         request_headers = {
-            'Authorization': self.api_key,
-            'Content-Type': 'application/json'
+            "Authorization": self.api_key,
+            "Content-Type": "application/json",
         }
 
         if headers:
@@ -205,17 +203,16 @@ class IcewatchClient:
 
         response = requests.request(
             method=method,
-            url=f'{self.api_url}/{endpoint}',
+            url=f"{self.api_url}/{endpoint}",
             headers=request_headers,
             json=data,
-            timeout=30
+            timeout=30,
         )
 
         if self.logger.isEnabledFor(logging.DEBUG):
             raw_request, raw_response = get_raw_http(response)
             self.logger.debug(
-                f"\nHTTP Request:\n{raw_request}\n\n"
-                f"HTTP Response:\n{raw_response}"
+                f"\nHTTP Request:\n{raw_request}\n\n" f"HTTP Response:\n{raw_response}"
             )
 
         return response
@@ -231,27 +228,26 @@ class IcewatchClient:
 
         icepick_results = self.icepick.get_latest_results()
         data = {
-            'id': self.device_id,
-            'configHash': config_hash,
-            'icepickResults': icepick_results
+            "id": self.device_id,
+            "configHash": config_hash,
+            "icepickResults": icepick_results,
         }
 
         try:
             response = self._make_api_request(
-                endpoint='check-in',
-                method='POST',
-                data=data
+                endpoint="check-in",
+                method="POST",
+                data=data,
             )
 
             if response.status_code == 200:
                 response_data = response.json()
 
-                if 'config' in response_data:
-                    new_config = response_data['config']
+                if "config" in response_data:
+                    new_config = response_data["config"]
                     self._write_config(new_config)
 
-                if hasattr(self.icepick, 'latest_results'):
-                    self.icepick.latest_results.clear()
+                self.icepick.latest_results.clear()
 
                 return True
 
@@ -260,7 +256,9 @@ class IcewatchClient:
                 self.logger.error(message)
                 raise Exception(message)
             else:
-                message = f"Check in failed: {response.json().get('error', 'Unknown error')}"
+                message = (
+                    f"Check in failed: {response.json().get('error', 'Unknown error')}"
+                )
                 self.logger.error(message)
                 raise Exception(message)
 
@@ -281,9 +279,7 @@ class IcewatchClient:
 
         try:
             response = self._make_api_request(
-                endpoint=ALERT_ENDPOINT,
-                method='POST',
-                data=data
+                endpoint=ALERT_ENDPOINT, method="POST", data=data
             )
 
             if response.status_code == 200:
@@ -321,6 +317,9 @@ class IcewatchClient:
 
             except Exception as e:
                 self.logger.error(f"Error in Icewatch loop: {e}")
+                self.stop()
+                time.sleep(2)
+                break
 
             time.sleep(1)
 

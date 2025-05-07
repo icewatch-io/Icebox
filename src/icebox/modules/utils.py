@@ -9,6 +9,7 @@ def get_config_value(key: str, default: Any = None) -> Any:
     """Get a config value from the ConfigStore singleton."""
     return ConfigStore().get(key, default)
 
+
 def get_raw_http(response: requests.Response) -> tuple[str, str]:
     """Format raw HTTP request and response.
 
@@ -20,13 +21,13 @@ def get_raw_http(response: requests.Response) -> tuple[str, str]:
 
     def format_headers(headers):
         if response.raw.version == 2:
-            pseudo = {k: v for k, v in headers.items() if k.startswith(':')}
-            regular = {k: v for k, v in headers.items() if not k.startswith(':')}
-            return '\n'.join(
-                [f'{k}: {v}' for k, v in pseudo.items()] +
-                [f'{k}: {v}' for k, v in regular.items()]
+            pseudo = {k: v for k, v in headers.items() if k.startswith(":")}
+            regular = {k: v for k, v in headers.items() if not k.startswith(":")}
+            return "\n".join(
+                [f"{k}: {v}" for k, v in pseudo.items()]
+                + [f"{k}: {v}" for k, v in regular.items()]
             )
-        return '\n'.join(f'{k}: {v}' for k, v in headers.items())
+        return "\n".join(f"{k}: {v}" for k, v in headers.items())
 
     raw_request = (
         f"{request.method} {request.url} {http_version}\n"

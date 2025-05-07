@@ -2,16 +2,16 @@ name: Dry run
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
   install-and-run:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Run setup script from PR
-      run: |
-        chmod +x .github/workflows/scripts/dry-run.sh
-        .github/workflows/scripts/dry-run.sh
+      - name: Run setup script from PR
+        run: |
+          chmod +x .github/workflows/scripts/dry-run.sh
+          .github/workflows/scripts/dry-run.sh
