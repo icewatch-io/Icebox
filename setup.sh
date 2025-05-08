@@ -52,6 +52,9 @@ gecho "Installing Icebox"
 DEPLOY_DIR=$(mktemp -d)
 cd "$DEPLOY_DIR"
 git clone https://github.com/icewatch-io/icebox.git
+if [ -d Icebox ]; then
+  mv Icebox icebox
+fi
 cd icebox
 mv src/icebox /opt/icebox
 chmod +x /opt/icebox/icebox/iptables.sh
