@@ -4,7 +4,7 @@ ICE (Intrusion Countermeasures Electronics) is a Cyberpunk concept for an active
 
 We don't run around with computers in our heads yet. For now, Icebox is a suite of tools to monitor physical and logical networks and alert you about intrusions or lapses in defenses. It's an IDS with a fancy name, and it's proud of that.
 
-Icebox is designed to be deployed on a Raspberry Pi, but you could probably run it in a VM. It is likely not compatible with Docker containers as multiple modules depend on raw network access to log broadcast and multicast traffic.
+Icebox is designed to be deployed on a Raspberry Pi, but you could probably run it in a VM. It is likely not compatible with Docker containers as multiple ice cubes depend on raw network access to log broadcast and multicast traffic.
 
 ## Ice Cubes
 
@@ -12,7 +12,7 @@ Individual features in Icebox are divided into "ice cubes."
 
 ### Icepick
 
-Icepick "picks" away at network segmentation checks -- it is designed to continuously verify network segmentation. You configure a list of network endpoints which should not be accessible from the network in which Icebox is deployed. Every 60-90 seconds, Icepick will attempt to establish a TCP connection with the endpoints and will notify you if any of the connections succeed.
+Icepick "picks" away at network segmentation checks -- it is designed to continuously verify network connectivity, or lack of connectivity, to TCP endpoints. You configure a list of network endpoints which should not be accessible from the network in which the Icebox is deployed. Every 60-90 seconds, Icepick will attempt to establish a TCP connection with the endpoints and will notify you if any of the connections succeed.
 
 You can also configure Icepick to alert when a given endpoint is NOT accessible, sort of like an uptime check.
 
@@ -64,41 +64,9 @@ You can restart Icebox using its systemd service:
 systemctl start icebox
 ```
 
-## Testing
-
-To run the tests, first install the development dependencies:
-
-```bash
-pip3 install -e .
-```
-
-Ensure pytest is installed:
-
-```bash
-pip3 install pytest
-```
-
-Run the tests using pytest:
-
-```bash
-python3 -m pytest
-```
-
-The tests require:
-
-- A test host (default: 192.168.20.11) with SSH access
-- A test user with SSH key authentication configured
-- Appropriate permissions to execute commands on the test host
-
-Configure test parameters in `tests/conftest.py` if needed.
-
 ## Icewatch Configuration
 
-The Icebox configuration options below can optionally be managed through
-Icewatch, a service to monitor and manage your Iceboxes from the cloud. Place an
-Icewatch config file in the icebox config directory to have Icewatch override
-the local config and pull the Icebox config from Icewatch. Sign up for Icewatch
-at [https://icewatch.io](icewatch.io).
+The Icebox configuration options below can optionally be managed through Icewatch, a service to monitor and manage your Iceboxes from the cloud. Place an Icewatch config file in the Icebox config directory to have Icewatch override the local config and pull the Icebox config from Icewatch. Sign up for Icewatch at [https://icewatch.io](icewatch.io).
 
 The Icewatch client looks for a configuration file in `/etc/icebox/icewatch.json`.
 
@@ -370,6 +338,36 @@ The action to take if the TCP connection fails. Valid actions are `pass` and `em
 
 Same as failure_action, but determines the action to take if the connection succeeds.
 
+# Development
+
+## Running Tests
+
+Icebox has unit tests to verify functionality during development. To run the tests, first install the development dependencies:
+
+```bash
+pip3 install -e .
+```
+
+Ensure pytest is installed:
+
+```bash
+pip3 install pytest
+```
+
+Run the tests using pytest:
+
+```bash
+python3 -m pytest
+```
+
+The tests require:
+
+- A test host (default: 192.168.20.11) with SSH access
+- A test user with SSH key authentication configured
+- Appropriate permissions to execute commands on the test host
+
+Configure test parameters in `tests/conftest.py` if needed.
+
 ## Feature Ideas
 
 ### IP Address Hopping
@@ -384,17 +382,13 @@ Have Icebox change the device's MAC address on install (or periodically) so it i
 
 Have Snowdog alert on new DHCP leases, giving admins a head start and an IP address to investigate when new devices join the network.
 
-### Ice Watch
-
-Have Icebox pull its config from the cloud and report alarm triggers to the cloud. Have the cloud send alerts.
-
 ### Ice Shelf
 
-Open a remote shell into your Iceboxes using Ice Watch -- a foothold of sorts.
+Open a remote shell into your Iceboxes using Icewatch -- a foothold of sorts.
 
 ### Signals Intelligence
 
-If installed on a Raspberry Pi or similar device, Icebox should have access to Bluetooth and Wireless chips. These could be used by Icebox to monitor for and alert on signal sources. This could allow detection of a phone or laptop within the physical vicinity of the Icebox without the device needing to probe the Icebox or join the protected network.
+If installed on a Raspberry Pi or similar device, Icebox should have access to Bluetooth and Wireless chipsets. These could be used by Icebox to monitor for and alert on signal sources. This could allow detection of a phone or laptop within the physical vicinity of the Icebox without the device needing to probe the Icebox or join the protected network.
 
 Such alarms could say:
 
@@ -404,7 +398,7 @@ Such alarms could say:
 
 If installed on a Raspberry Pi or similar device, Icebox should have access to GPIO pins which allow physical sensors and access control devices to be installed. Icebox could utilize these to detect and alert on physical environment conditions, such as motion or light changes. Icebox could also be used to monitor and control access control devices such as door locks.
 
-# Namestorming
+## Namestorming
 
 Put feature names here if you've thought of them but not the feature yet.
 
