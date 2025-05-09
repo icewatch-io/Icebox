@@ -17,7 +17,11 @@ def test_ping_detection(test_config, ssh_client, log_watcher):
 
     # Check for expected log entries
     ping_log = log_watcher(test_config["LOG_FILE"], "PING DETECTED", timestamp)
-    email_log = log_watcher(test_config["LOG_FILE"], "Email sent successfully", timestamp)
+    email_log = log_watcher(
+        test_config["LOG_FILE"],
+        "Processing alert: PING DETECTED",
+        timestamp,
+    )
 
     assert ping_log is not None, "Ping detection log entry not found"
     assert email_log is not None, "Email notification log entry not found"
@@ -35,7 +39,11 @@ def test_port_scan_detection(test_config, ssh_client, log_watcher):
 
     # Check for expected log entries
     scan_log = log_watcher(test_config["LOG_FILE"], "PORT SCAN DETECTED", timestamp)
-    email_log = log_watcher(test_config["LOG_FILE"], "Email sent successfully", timestamp)
+    email_log = log_watcher(
+        test_config["LOG_FILE"],
+        "Processing alert: PORT SCAN DETECTED",
+        timestamp,
+    )
 
     assert scan_log is not None, "Port scan detection log entry not found"
     assert email_log is not None, "Email notification log entry not found"
@@ -52,9 +60,14 @@ def test_tcp_connection_detection(test_config, ssh_client, log_watcher):
     stdout.channel.recv_exit_status()
 
     # Check for expected log entries
-    ping_log = log_watcher(test_config["LOG_FILE"], "Incoming connection detected", timestamp)
-    email_log = log_watcher(test_config["LOG_FILE"], "Email sent successfully", timestamp)
+    ping_log = log_watcher(
+        test_config["LOG_FILE"], "Detected incoming connection", timestamp
+    )
+    email_log = log_watcher(
+        test_config["LOG_FILE"],
+        "Processing alert: CONNECTION DETECTED",
+        timestamp,
+    )
 
     assert ping_log is not None, "TCP connection detection log entry not found"
     assert email_log is not None, "Email notification log entry not found"
-

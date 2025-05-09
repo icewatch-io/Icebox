@@ -7,10 +7,7 @@ from typing import Callable
 
 class LogWatcher:
     def __init__(
-        self,
-        file_path: str,
-        tag: str,
-        message_handler: Callable[[str], None]
+        self, file_path: str, tag: str, message_handler: Callable[[str], None]
     ) -> None:
         self.file_path = file_path
         self.tag = tag
@@ -39,7 +36,7 @@ class LogWatcher:
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"Log file not found: {self.file_path}")
 
-        with open(self.file_path, 'r') as file:
+        with open(self.file_path, "r") as file:
             file.seek(0, 2)
 
             while not self.shutdown_flag.is_set():

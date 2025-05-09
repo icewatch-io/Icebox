@@ -2,12 +2,17 @@ import threading
 import importlib
 import signal
 import sys
+import json
+from pathlib import Path
 
 from modules.logger import Logger
-from modules.utils import get_config
+from modules.config_store import ConfigStore
+from icewatch import IcewatchClient
+from modules.alerter import Alerter
 
-CONFIG_PATH = '/etc/icebox/config.json'
-MODULES = ['icepick', 'icicle', 'snowdog']
+CONFIG_PATH = "/etc/icebox/config.json"
+ICEWATCH_CONFIG_PATH = "/etc/icebox/icewatch.json"
+MODULES = ["icepick", "icicle", "snowdog"]
 
 shutdown_flag = threading.Event()
 instances = []
@@ -18,34 +23,83 @@ def signal_handler(signum: int, frame: any) -> None:
     shutdown_flag.set()
 
 
-def start_ice_cube_thread(ice_cube_name: str, config_path: str) -> tuple:
+def start_ice_cube_thread(ice_cube_name: str) -> tuple:
+    logger = Logger.get_logger("startup")
+    logger.debug(f"Starting {ice_cube_name}")
     ice_cube = importlib.import_module(ice_cube_name)
     ice_cube_class = getattr(ice_cube, ice_cube_name.capitalize())
-    instance = ice_cube_class(config_path)
+    instance = ice_cube_class()
     thread = threading.Thread(target=instance.run, daemon=True)
     thread.start()
+    logger.debug(f"Started {ice_cube_name} thread")
     return thread, instance
+
+
+def init_config() -> None:
+    """Initialize configuration."""
+    logger = Logger.get_logger("main")
+    config_store = ConfigStore()
+
+    if Path(ICEWATCH_CONFIG_PATH).exists():
+        logger.info("Icewatch config found, initializing Icewatch")
+        try:
+            with open(ICEWATCH_CONFIG_PATH) as f:
+                icewatch_config = json.load(f)
+
+            icewatch = IcewatchClient(
+                api_url=icewatch_config["api_url"],
+                device_id=icewatch_config["device_id"],
+                api_key=icewatch_config["api_key"],
+            )
+
+            alerter = Alerter()
+            alerter.configure_icewatch({})
+
+            icewatch_thread = threading.Thread(target=icewatch.run, daemon=True)
+            icewatch_thread.start()
+
+            if not icewatch.wait_for_initial_config():
+                logger.warning(
+                    "Failed to get config from Icewatch, trying cached config"
+                )
+                if not icewatch._load_cached_config():
+                    logger.warning(
+                        "No cached config found, falling back to local config"
+                    )
+                    config_store.load_config(CONFIG_PATH)
+
+        except Exception as e:
+            logger.error(f"Failed to initialize Icewatch: {e}")
+            logger.info("Falling back to local config")
+            config_store.load_config(CONFIG_PATH)
+    else:
+        logger.info("No Icewatch config found, using local config")
+        config_store.load_config(CONFIG_PATH)
 
 
 def main() -> None:
     global shutdown_flag, instances
-
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    config = get_config(CONFIG_PATH)
     Logger.configure(
-        log_file=config['log']['file'],
-        log_level=config['log']['level']
+        log_file="/var/log/icebox/icebox.log",
+        log_level="DEBUG",
     )
-
-    logger = Logger.get_logger('main')
+    logger = Logger.get_logger("main")
     logger.info("Icebox starting...")
+
+    init_config()
+    config_store = ConfigStore(shutdown_flag=shutdown_flag)
+
+    Logger.configure(
+        log_file=config_store.get("log.file"), log_level=config_store.get("log.level")
+    )
 
     threads = []
     for ice_cube_name in MODULES:
         try:
-            thread, instance = start_ice_cube_thread(ice_cube_name, CONFIG_PATH)
+            thread, instance = start_ice_cube_thread(ice_cube_name)
             threads.append(thread)
             instances.append(instance)
         except Exception as e:
@@ -62,7 +116,6 @@ def main() -> None:
 
     logger.info("Shutting down...")
 
-    # Stop all instances
     for instance in instances:
         try:
             instance.stop()

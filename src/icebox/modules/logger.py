@@ -2,45 +2,73 @@ import logging
 import re
 from threading import Lock
 from typing import Optional
+import sys
+
+
+class ColorFormatter(logging.Formatter):
+    """Custom formatter with colored output for different log levels."""
+
+    COLORS = {
+        "DEBUG": "\033[36m",
+        "INFO": "\033[32m",
+        "WARNING": "\033[33m",
+        "ERROR": "\033[31m",
+        "CRITICAL": "\033[35m",
+        "RESET": "\033[0m",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        message = super().format(record)
+
+        if record.levelname in self.COLORS:
+            message = f"{self.COLORS[record.levelname]}{message}{self.COLORS['RESET']}"
+
+        return message
 
 
 class Logger:
     _logger: Optional[logging.Logger] = None
     _lock: Lock = Lock()
+    _configured = False
 
-    @staticmethod
-    def configure(log_file: str, log_level: int = logging.DEBUG) -> None:
-        with Logger._lock:
-            if Logger._logger is None:
-                Logger._logger = logging.getLogger()
-                Logger._logger.setLevel(log_level)
+    @classmethod
+    def configure(cls, log_file: str, log_level: str = "INFO") -> None:
+        """Configure the logging system."""
+        if cls._configured:
+            return
 
-                fh = logging.FileHandler(log_file)
-                fh.setLevel(log_level)
+        numeric_level = getattr(logging, log_level.upper(), logging.INFO)
 
-                ch = logging.StreamHandler()
-                ch.setLevel(log_level)
+        file_formatter = logging.Formatter(
+            "[%(asctime)s] [%(name)s] %(levelname)s %(message)s"
+        )
+        console_formatter = ColorFormatter(
+            "[%(asctime)s] [%(name)s] %(levelname)s %(message)s"
+        )
 
-                formatter = logging.Formatter(
-                    '[%(asctime)s] [%(name)s] %(levelname)s %(message)s'
-                )
-                fh.setFormatter(formatter)
-                ch.setFormatter(formatter)
+        root_logger = logging.getLogger()
+        root_logger.setLevel(numeric_level)
 
-                Logger._logger.addHandler(fh)
-                Logger._logger.addHandler(ch)
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(file_formatter)
+        root_logger.addHandler(file_handler)
 
-                Logger._logger.addFilter(SanitizeLogFilter())
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(console_formatter)
+        root_logger.addHandler(console_handler)
 
-    @staticmethod
-    def get_logger(name: str) -> logging.Logger:
-        if Logger._logger is None:
-            raise RuntimeError("Logger not configured. Call Logger.configure() first.")
-        return Logger._logger.getChild(name)
+        cls._configured = True
+
+    @classmethod
+    def get_logger(cls, name: str) -> logging.Logger:
+        """Get a logger instance with the given name."""
+        if not cls._configured:
+            cls.configure("/var/log/icebox/icebox.log")
+        return logging.getLogger(name)
 
 
 class SanitizeLogFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = re.sub(r'[\n\r\t]', '_', str(record.msg))
+        record.msg = re.sub(r"[\n\r\t]", "_", str(record.msg))
         return True

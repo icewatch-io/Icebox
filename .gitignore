@@ -2,3 +2,4 @@ venv
 .vscode
 config.json
 */__pycache__/*
+devfile.yaml
