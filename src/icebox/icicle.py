@@ -116,7 +116,7 @@ class Icicle:
 
         connected_ports = ""
         for port in unique_ports:
-            connected_ports += " - {port}\n"
+            connected_ports += f" - {port}\n"
 
         self.alerter.alert(
             source="icicle",
