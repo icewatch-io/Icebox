@@ -105,7 +105,7 @@ class Icicle:
         start_time = str(connection_info["first_connection"])
         ports = connection_info["connected_ports"]
         num_ports = len(ports)
-        unique_ports = set(ports)
+        unique_ports = sorted(set(ports))
         num_unique_ports = len(unique_ports)
 
         subject = f"CONNECTION DETECTED"
@@ -114,12 +114,18 @@ class Icicle:
         elif num_unique_ports == 1 and 0 in unique_ports:
             subject = f"PING DETECTED"
 
+        connected_ports = ""
+        for port in unique_ports:
+            connected_ports += " - {port}\n"
+
         self.alerter.alert(
             source="icicle",
             subject=subject,
             body=(
                 f"Incoming connection detected from {src_address}.\n\n"
                 f"{num_ports} connections were observed to "
-                f"{num_unique_ports} unique ports, starting at {start_time}."
+                f"{num_unique_ports} unique ports, starting at {start_time}.\n\n"
+                f"Ports connected to:\n"
+                f"{connected_ports}"
             ),
         )
