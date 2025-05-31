@@ -309,12 +309,12 @@ class IcewatchClient:
                 current_time = time.time()
 
                 if current_time - last_check_in_time >= 60:
-                    self.check_in()
                     last_check_in_time = current_time
+                    self.check_in()
 
                 if current_time - last_alert_time >= 10:
-                    self.send_alerts()
                     last_alert_time = current_time
+                    self.send_alerts()
 
             except Exception as e:
                 self.error_count += 1
