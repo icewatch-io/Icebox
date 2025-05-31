@@ -38,6 +38,12 @@ You can install Icebox on Ubuntu 22.04 systems with the following command:
 curl -s https://raw.githubusercontent.com/icewatch-io/icebox/main/setup.sh | sudo bash
 ```
 
+While Ubuntu Server 22.04 is the only officially supported platform, you can install Icebox on other platforms with this:
+
+```
+curl -s https://raw.githubusercontent.com/icewatch-io/icebox/main/setup.sh | sudo bash -s -- --force
+```
+
 ## Working with the service
 
 ### Starting Icebox
