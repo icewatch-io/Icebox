@@ -5,10 +5,18 @@ set -e
 gecho() { echo -e "\033[1;32m$1\033[0m"; }
 recho() { echo -e "\033[1;31m$1\033[0m"; }
 
+# Parse command line arguments
+FORCE=false
+for arg in "$@"; do
+    if [ "$arg" == "--force" ]; then
+        FORCE=true
+    fi
+done
+
 # Check prerequisites
-if [ ! -f "/etc/lsb-release" ] || [ -z "$(grep '22.04' /etc/lsb-release)" ]; then
+if [ "$FORCE" = false ] && { [ ! -f "/etc/lsb-release" ] || [ -z "$(grep '22.04' /etc/lsb-release)" ]; }; then
     recho "ERROR: The official Icebox setup script only supports Ubuntu Server 22.04"
-    recho "You may delete this check and run the script at your own risk."
+    recho "Use --force flag to override this check and run at your own risk."
     exit 1
 fi
 

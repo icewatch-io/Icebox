@@ -46,6 +46,7 @@ class IcewatchClient:
         self.api_url = api_url.rstrip("/")
         self.device_id = device_id
         self.api_key = api_key
+        self.error_count = 0
         self.default_config_path = Path("/etc/icebox/config.json")
         self.cached_config_path = Path("/etc/icebox/config-icewatch.json")
         self.logger = Logger.get_logger("icewatch")
@@ -308,18 +309,17 @@ class IcewatchClient:
                 current_time = time.time()
 
                 if current_time - last_check_in_time >= 60:
-                    self.check_in()
                     last_check_in_time = current_time
+                    self.check_in()
 
                 if current_time - last_alert_time >= 10:
-                    self.send_alerts()
                     last_alert_time = current_time
+                    self.send_alerts()
 
             except Exception as e:
+                self.error_count += 1
                 self.logger.error(f"Error in Icewatch loop: {e}")
-                self.stop()
-                time.sleep(2)
-                break
+                self.logger.error(f"Error count: {self.error_count}")
 
             time.sleep(1)
 
