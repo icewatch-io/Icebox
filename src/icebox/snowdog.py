@@ -1,6 +1,7 @@
 import re
 import time
 import threading
+from typing import Tuple
 
 from modules.alerter import Alerter
 from modules.logger import Logger
