@@ -117,7 +117,7 @@ class Snowdog:
                 f"Error learning MAC addresses: {e}, " f"message: {message}"
             )
 
-    def has_unknown_macs(self, message: str) -> None:
+    def has_unknown_macs(self, message: str) -> bool:
         try:
             source_mac, destination_mac = self.get_mac_addresses(message)
             if not source_mac or not destination_mac:
@@ -133,18 +133,12 @@ class Snowdog:
             )
             return False
 
-    def get_mac_addresses(self, message: str) -> None:
-        mac = re.search(r"MAC=([a-f0-9:]{77})", message)
-        if mac:
-            try:
-                mac = mac[1]
-                components = mac.split(":")
-                destination_mac = ":".join(components[0:6])
-                source_mac = ":".join(components[6:12])
-                return source_mac, destination_mac
-            except Exception as e:
-                self.logger.error(
-                    f"Error extracting MAC addresses from message: {e}, "
-                    f"message: {message}"
-                )
+    def get_mac_addresses(self, message: str) -> Tuple[str, str]:
+        mac_match = re.search(r"MAC=((?:[a-f0-9]{2}:){12}[a-f0-9]{2})", message)
+        if mac_match:
+            mac_str = mac_match.group(1)
+            parts = mac_str.split(":")
+            dest_mac = ":".join(parts[0:6])
+            src_mac = ":".join(parts[6:12])
+            return src_mac, dest_mac
         return None, None
