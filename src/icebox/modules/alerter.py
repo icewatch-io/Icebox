@@ -60,9 +60,9 @@ class Alerter:
                     if filter["subject"] and filter["body"]:
                         if filter["subject"] in subject and filter["body"] in body:
                             filtered = True
-                    if filter["subject"] and filter["subject"] in subject:
+                    elif filter["subject"] and filter["subject"] in subject:
                         filtered = True
-                    if filter["body"] and filter["body"] in body:
+                    elif filter["body"] and filter["body"] in body:
                         filtered = True
             if filtered:
                 self.logger.debug(f"Alert filtered: {subject}")
