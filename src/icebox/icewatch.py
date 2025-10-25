@@ -53,7 +53,6 @@ class IcewatchClient:
         self.initial_config_event = threading.Event()
         self.alert_queue = self._alert_queue
 
-        # Use provided ConfigStore or create new one
         self.logger.info("Setting up configuration store")
         self.config_store = config_store or ConfigStore()
         self.shutdown_flag = self.config_store.shutdown_flag

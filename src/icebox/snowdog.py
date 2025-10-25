@@ -19,6 +19,8 @@ class Snowdog:
             self.shutdown_flag = threading.Event()
             self.logger = Logger.get_logger("snowdog")
 
+            self.icebox = self.config_store.get("icebox")
+            self.name = self.icebox.get("name")
             self.config_store.watch("iptables.log_file", self._handle_log_file_change)
             self.config_store.watch("smtp", self._handle_smtp_config_change)
             self.config_store.watch("snowdog", self._handle_snowdog_config_change)
@@ -95,7 +97,7 @@ class Snowdog:
                 if self.config_store.get("snowdog.alerting"):
                     self.alerter.alert(
                         source="snowdog",
-                        subject=f"Unknown MAC address detected",
+                        subject=f"{self.name}: Unknown MAC address detected",
                         body=f"An unknown MAC address was detected.\n\n{message}",
                     )
                 else:

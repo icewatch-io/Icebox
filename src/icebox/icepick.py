@@ -7,6 +7,7 @@ import json
 
 from modules.alerter import Alerter
 from modules.logger import Logger
+from modules.config_store import ConfigStore
 
 
 class Icepick:
@@ -20,11 +21,14 @@ class Icepick:
 
     def __init__(self, shutdown_flag: threading.Event = None) -> None:
         if not Icepick._initialized:
+            self.config_store = ConfigStore()
             self.shutdown_flag = shutdown_flag or threading.Event()
             self._results_lock = threading.Lock()
             self.latest_results = []
             self.connections = []
 
+            self.icebox = self.config_store.get("icebox")
+            self.name = self.icebox.get("name")
             self.logger = Logger.get_logger("icepick")
             self.alerter = Alerter()
             Icepick._initialized = True
@@ -87,8 +91,9 @@ class Icepick:
         self.latest_results.append(result)
 
         result_text = "succeeded" if connection_status else "failed"
-        subject = f'{connection["name"]}: Connection {result_text.upper()}'
-        body = json.dumps(connection, indent=2)
+        subject = f"{self.name}: {connection['name']}: Connection {result_text.upper()}"
+        body = f"Icebox {self.name} executed icepick check {connection['name']} with an unexpected result.\n\n"
+        body += json.dumps(connection, indent=2)
         action = success_action if connection_status else failure_action
 
         self.logger.info(
