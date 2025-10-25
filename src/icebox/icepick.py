@@ -27,8 +27,7 @@ class Icepick:
             self.latest_results = []
             self.connections = []
 
-            self.icebox = self.config_store.get("icebox")
-            self.name = self.icebox.get("name")
+            self.icebox_name = self.config_store.get("icebox.name")
             self.logger = Logger.get_logger("icepick")
             self.alerter = Alerter()
             Icepick._initialized = True
@@ -91,8 +90,8 @@ class Icepick:
         self.latest_results.append(result)
 
         result_text = "succeeded" if connection_status else "failed"
-        subject = f"{self.name}: {connection['name']}: Connection {result_text.upper()}"
-        body = f"Icebox {self.name} executed icepick check {connection['name']} with an unexpected result.\n\n"
+        subject = f"{self.icebox_name}: {connection['name']}: Connection {result_text.upper()}"
+        body = f"Icebox {self.icebox_name} executed icepick check {connection['name']} with an unexpected result.\n\n"
         body += json.dumps(connection, indent=2)
         action = success_action if connection_status else failure_action
 

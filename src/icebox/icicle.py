@@ -18,8 +18,7 @@ class Icicle:
         self.config_store.watch("iptables.log_file", self._handle_log_file_change)
         self.config_store.watch("smtp", self._handle_smtp_config_change)
 
-        self.icebox = self.config_store.get("icebox")
-        self.name = self.icebox.get("name")
+        self.icebox_name = self.config_store.get("icebox.name")
         self.iptables_log = self.config_store.get("iptables.log_file")
         self.alerter = Alerter()
         if self.config_store.get("smtp"):
@@ -102,19 +101,17 @@ class Icicle:
             self.logger.error(f"Error parsing message: {e}, {message}")
 
     def send_alert(self, src_address: str, connection_info: dict) -> None:
-        icebox_name = self.config_store.get("icebox.name")
-
         start_time = str(connection_info["first_connection"])
         ports = connection_info["connected_ports"]
         num_ports = len(ports)
         unique_ports = sorted(set(ports))
         num_unique_ports = len(unique_ports)
 
-        subject = f"{self.name}: CONNECTION DETECTED"
+        subject = f"{self.icebox_name}: CONNECTION DETECTED"
         if num_unique_ports > 3:
-            subject = f"{self.name}: PORT SCAN DETECTED"
+            subject = f"{self.icebox_name}: PORT SCAN DETECTED"
         elif num_unique_ports == 1 and 0 in unique_ports:
-            subject = f"{self.name}: PING DETECTED"
+            subject = f"{self.icebox_name}: PING DETECTED"
 
         connected_ports = ""
         for port in unique_ports:
@@ -124,7 +121,7 @@ class Icicle:
             source="icicle",
             subject=subject,
             body=(
-                f"Icebox {self.name} detected an incoming connection from {src_address}.\n\n"
+                f"Icebox {self.icebox_name} detected an incoming connection from {src_address}.\n\n"
                 f"{num_ports} connections were observed to "
                 f"{num_unique_ports} unique ports, starting at {start_time}.\n\n"
                 f"Ports connected to:\n"
