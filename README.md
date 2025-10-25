@@ -28,17 +28,17 @@ Snowdog has a "learning" mode where it records all observed MAC addresses. Once 
 
 ## Supported Operating Systems
 
-Icebox officially supports only Ubuntu Server 22.04 (and minor versions). You can modify the setup script to install on other systems at your own risk.
+Icebox officially supports only Ubuntu Server 24.04 (and minor versions). You can modify the setup script to install on other systems at your own risk.
 
 ## Installation
 
-You can install Icebox on Ubuntu 22.04 systems with the following command:
+You can install Icebox on Ubuntu 24.04 systems with the following command:
 
 ```
 curl -s https://raw.githubusercontent.com/icewatch-io/icebox/main/setup.sh | sudo bash
 ```
 
-While Ubuntu Server 22.04 is the only officially supported platform, you can install Icebox on other platforms with this:
+While Ubuntu Server 24.04 is the only officially supported platform, you can install Icebox on other platforms with this:
 
 ```
 curl -s https://raw.githubusercontent.com/icewatch-io/icebox/main/setup.sh | sudo bash -s -- --force

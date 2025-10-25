@@ -14,8 +14,8 @@ for arg in "$@"; do
 done
 
 # Check prerequisites
-if [ "$FORCE" = false ] && { [ ! -f "/etc/lsb-release" ] || [ -z "$(grep '22.04' /etc/lsb-release)" ]; }; then
-    recho "ERROR: The official Icebox setup script only supports Ubuntu Server 22.04"
+if [ "$FORCE" = false ] && { [ ! -f "/etc/lsb-release" ] || [ -z "$(grep '24.04' /etc/lsb-release)" ]; }; then
+    recho "ERROR: The official Icebox setup script only supports Ubuntu Server 24.04"
     recho "Use --force flag to override this check and run at your own risk."
     exit 1
 fi
