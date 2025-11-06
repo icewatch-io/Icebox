@@ -48,7 +48,6 @@ def init_config() -> None:
 
             icewatch = IcewatchClient(
                 api_url=icewatch_config["api_url"],
-                device_id=icewatch_config["device_id"],
                 api_key=icewatch_config["api_key"],
             )
 

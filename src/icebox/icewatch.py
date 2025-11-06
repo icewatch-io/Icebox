@@ -32,7 +32,6 @@ class IcewatchClient:
     def __init__(
         self,
         api_url: str = None,
-        device_id: str = None,
         api_key: str = None,
         config_store: Optional[ConfigStore] = None,
     ):
@@ -40,11 +39,10 @@ class IcewatchClient:
         if self.initialized:
             return
 
-        if not all([api_url, device_id, api_key]):
+        if not all([api_url, api_key]):
             raise ValueError("All initialization parameters are required")
 
         self.api_url = api_url.rstrip("/")
-        self.device_id = device_id
         self.api_key = api_key
         self.error_count = 0
         self.default_config_path = Path("/etc/icebox/config.json")
@@ -184,7 +182,6 @@ class IcewatchClient:
             )
 
         return {
-            "id": self.device_id,
             "alerts": formatted_alerts,
         }
 
@@ -194,7 +191,7 @@ class IcewatchClient:
         """Make an API request to the Icebox server."""
 
         request_headers = {
-            "Authorization": self.api_key,
+            "x-api-key": self.api_key,
             "Content-Type": "application/json",
         }
 
@@ -228,7 +225,6 @@ class IcewatchClient:
 
         icepick_results = self.icepick.get_latest_results()
         data = {
-            "id": self.device_id,
             "configHash": config_hash,
             "icepickResults": icepick_results,
         }
